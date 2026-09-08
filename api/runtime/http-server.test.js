@@ -17,13 +17,13 @@ function request(server, { method = "GET", path = "/health", body, contentType =
     req.on("error", reject); if (body !== undefined) req.end(JSON.stringify(body)); else req.end();
   });
 }
-async function running(application) { const server = createHttpServer({ application }); await new Promise((resolve) => server.listen(0, resolve)); return server; }
+async function running(application, authenticate) { const server = createHttpServer({ application, authenticate }); await new Promise((resolve) => server.listen(0, resolve)); return server; }
 
-test("HTTP server health and consultation flow work end-to-end", async (t) => {
+test("HTTP server health and public consultation flow work end-to-end", async (t) => {
   const repositories = createApplicationRepositories();
   const application = createApplicationRuntime({ repositories, provider: { execute: async () => ({ answer: "draft" }) } });
   const server = await running(application); t.after(() => server.close());
-  assert.deepEqual((await request(server)).body, { status: "ok" });
+  assert.deepEqual((await request(server)).body, { status: "ok", persistence: "provider-boundary" });
   const result = await request(server, { method: "POST", path: "/api/consultations", body: { name: "Test Client", email: "CLIENT@EXAMPLE.COM", summary: "Need agreement review", jurisdiction: "IN", urgency: "urgent" } });
   assert.equal(result.status, 200); assert.ok(result.body.clientId); assert.ok(result.body.matterId); assert.equal(result.body.intakeState, "intake");
 });
@@ -31,7 +31,8 @@ test("HTTP server health and consultation flow work end-to-end", async (t) => {
 test("HTTP server dispatches authenticated CRM and party operations", async (t) => {
   const repositories = createApplicationRepositories();
   const application = createApplicationRuntime({ repositories, provider: { execute: async () => ({ answer: "draft" }) } });
-  const server = await running(application); t.after(() => server.close());
+  const actor = { id: "professional-1", roles: ["professional"] };
+  const server = await running(application, async () => actor); t.after(() => server.close());
   const client = await request(server, { method: "POST", path: "/api/clients", body: { name: "Acme Client", email: "client@example.com" } });
   assert.equal(client.status, 200); assert.ok(client.body.id);
   const party = await request(server, { method: "POST", path: "/api/parties", body: { kind: "person", displayName: "Party One" } });
@@ -43,7 +44,7 @@ test("HTTP server dispatches authenticated CRM and party operations", async (t) 
 test("HTTP server enforces authentication on non-public routes", async (t) => {
   const server = await running(); t.after(() => server.close());
   const result = await request(server, { method: "POST", path: "/api/clients", body: { name: "Blocked" } });
-  assert.equal(result.status, 500); assert.match(result.body.error, /Authenticated actor/);
+  assert.equal(result.status, 401); assert.match(result.body.error, /Authenticated actor/);
 });
 
 test("HTTP dispatcher rejects invalid method, content type and ambiguous operation", async (t) => {
