@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "migrationTable": "acme_migrations",
+  "migrations": [
+    {
+      "version": "001_initial_relational_schema",
+      "file": "api/persistence/migrations/001_initial_relational_schema.sql",
+      "schema": "api/persistence/schema/001_initial_relational_schema.sql",
+      "checksum": "CANONICAL_SCHEMA_V1",
+      "rollback": "provider-specific-before-production-approval"
+    }
+  ],
+  "policy": {
+    "checksumDrift": "fail",
+    "partialMigration": "fail",
+    "destructiveRollback": "forbidden-by-default"
+  }
+}
