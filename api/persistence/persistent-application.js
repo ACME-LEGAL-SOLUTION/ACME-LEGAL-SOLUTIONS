@@ -13,7 +13,7 @@ function createPersistentApplication({ executor, begin, commit, rollback, provid
   const { repositories } = createSqlRepositories({ executor });
   const transaction = createTransactionBoundary({ begin, commit, rollback });
   const storage = createTransactionalStorage({ repositories, transaction });
-  const application = createApplicationRuntime({ repositories: storage, provider, clock });
+  const application = createApplicationRuntime({ repositories, provider, clock });
 
   return Object.freeze({ application, repositories: storage, transaction });
 }
