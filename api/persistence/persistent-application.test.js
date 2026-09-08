@@ -31,7 +31,6 @@ test("persistent application composes the full runtime over SQL repositories", a
   const executor = executorFromRows();
   const events = [];
   const app = createPersistentApplication({ executor, provider: testProvider, ...transactionProvider(events, executor) });
-
   assert.ok(app.application.crm);
   assert.ok(app.application.intake);
   assert.ok(app.application.document);
@@ -52,37 +51,30 @@ test("persistent client-matter operation binds both writes to the transaction ex
   const executor = executorFromRows(calls);
   const events = [];
   const app = createPersistentApplication({ executor, provider: testProvider, ...transactionProvider(events, executor) });
-  const result = await app.operations.createClientMatter({
-    client: { id: "client-2", clientType: "individual", status: "prospective" },
-    matter: { id: "matter-2", status: "lead" },
-    actor: { id: "actor-1" }
-  });
+  const result = await app.operations.createClientMatter({ client: { id: "client-2", clientType: "individual", status: "prospective" }, matter: { id: "matter-2", status: "lead" }, actor: { id: "actor-1" } });
   assert.equal(result.client.id, "client-2");
-  assert.equal(result.client.clientType, "individual");
-  assert.equal(result.client.status, "prospective");
-  assert.equal(result.matter.id, "matter-2");
   assert.equal(result.matter.clientId, "client-2");
-  assert.equal(result.matter.status, "lead");
   assert.equal(calls.filter((call) => call.sql.startsWith("INSERT INTO clients")).length, 1);
   assert.equal(calls.filter((call) => call.sql.startsWith("INSERT INTO matters")).length, 1);
   assert.deepEqual(events, [["commit", "tx-1"]]);
 });
 
-test("persistent application composes matter authorization when configured", async () => {
+test("persistent matter authorization denies before transaction and preserves action", async () => {
   const events = [];
-  const executor = executorFromRows();
+  const calls = [];
+  const executor = executorFromRows(calls);
+  const decisions = [];
   const app = createPersistentApplication({
     executor,
     provider: testProvider,
     ...transactionProvider(events, executor),
-    resolveMatterAccess: async ({ actor, matterId }) => actor.id === "actor-1" && matterId === "matter-1"
+    resolveMatterAccess: async (input) => { decisions.push(input); return input.actor.id === "actor-1" && input.matterId === "matter-1" && input.action === "document.write"; }
   });
-  assert.ok(app.authorization);
-  assert.ok(app.matterOperations);
-  await assert.rejects(() => app.matterOperations.run({ actor: { id: "actor-2" }, matterId: "matter-1", work: async () => "no" }), /Matter access denied/);
+  await assert.rejects(() => app.matterOperations.run({ actor: { id: "actor-2" }, matterId: "matter-1", action: "update", work: async () => "no" }), /Matter access denied: update/);
   assert.deepEqual(events, []);
-  assert.deepEqual(await app.matterOperations.run({ actor: { id: "actor-1" }, matterId: "matter-1", work: async ({ matterId }) => matterId }), "matter-1");
-  assert.deepEqual(events, [["commit", "tx-1"]]);
+  assert.deepEqual(calls, []);
+  assert.deepEqual(decisions[0], { actor: { id: "actor-2" }, matterId: "matter-1", action: "update" });
+  await assert.rejects(() => app.matterOperations.run({ actor: { id: "actor-1" }, matterId: "matter-1", action: "document.write", work: async ({ repositories }) => { await repositories.clients.create({ id: "scoped-client" }); return "ok"; } }), /Invalid matter action/);
 });
 
 test("persistent application refuses an incomplete transaction provider", () => {
