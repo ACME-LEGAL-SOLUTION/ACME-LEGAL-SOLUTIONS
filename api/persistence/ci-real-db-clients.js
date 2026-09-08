@@ -34,8 +34,10 @@ function mariadbClient({ config }) {
     close: () => pool.end(),
     async query(sql, params) {
       const connection = await pool.getConnection();
-      try { return { rows: Array.isArray(await connection.query(sql, params)) ? await connection.query(sql, params) : [] }; }
-      finally { connection.release(); }
+      try {
+        const rows = await connection.query(sql, params);
+        return { rows: Array.isArray(rows) ? rows : [] };
+      } finally { connection.release(); }
     }
   };
 }
@@ -51,11 +53,7 @@ function sqliteClient({ config }) {
     if (params.length === 0 && /;/.test(sql.trim().replace(/;\s*$/, ""))) return exec(sql);
     return /^SELECT\b/i.test(sql.trim()) ? all(sql, params) : run(sql, params);
   };
-  return {
-    connect: async () => ({ query, close: async () => {} }),
-    close: () => new Promise((resolve, reject) => database.close((error) => error ? reject(error) : resolve())),
-    query
-  };
+  return { connect: async () => ({ query, close: async () => {} }), close: () => new Promise((resolve, reject) => database.close((error) => error ? reject(error) : resolve())), query };
 }
 
 async function createSqliteLock({ config }) {
