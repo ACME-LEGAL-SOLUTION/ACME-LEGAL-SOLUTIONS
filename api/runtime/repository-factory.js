@@ -8,15 +8,26 @@ const COLLECTIONS = Object.freeze([
   "diary", "hearings", "invoices", "payments", "partners"
 ]);
 
-function createApplicationRepositories() {
+function createApplicationRepositories({ clock = () => new Date() } = {}) {
   const repositories = Object.fromEntries(COLLECTIONS.map((name) => [name, createCollection()]));
   repositories.auditService = {
     append: async (event) => repositories.audit.create(event),
     list: async () => repositories.audit.list()
   };
+
+  const matters = createCollection();
   repositories.matters = {
-    ...createCollection()
+    ...matters,
+    async transition(id, status, actor, review = null) {
+      return matters.update(id, {
+        status,
+        updatedAt: clock().toISOString(),
+        lastTransitionBy: actor.id,
+        lastReviewId: review?.id || null
+      });
+    }
   };
+
   return repositories;
 }
 
