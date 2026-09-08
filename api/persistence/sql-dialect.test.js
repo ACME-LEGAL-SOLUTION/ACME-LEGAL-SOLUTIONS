@@ -18,6 +18,15 @@ test("SQL dialect preserves question-mark syntax for SQLite-style drivers", () =
   });
 });
 
+test("SQL dialect does not treat question marks in literals or comments as parameters", () => {
+  const dialect = createSqlDialect({ provider: "postgresql", placeholder: (index) => `$${index}` });
+  const sql = "SELECT '?' AS s, \"?\" AS i, `?` AS b, ? AS value -- ?\n/* ? */";
+  assert.deepEqual(dialect.bind(sql, ["x"]), {
+    sql: "SELECT '?' AS s, \"?\" AS i, `?` AS b, $1 AS value -- ?\n/* ? */",
+    params: ["x"]
+  });
+});
+
 test("SQL dialect rejects placeholder/parameter count mismatch", () => {
   const dialect = createSqlDialect({ provider: "postgresql", placeholder: (index) => `$${index}` });
   assert.throws(() => dialect.bind("SELECT ?", []), /placeholder count/);
