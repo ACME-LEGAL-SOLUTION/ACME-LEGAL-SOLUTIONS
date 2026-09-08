@@ -4,13 +4,13 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const { createPersistentApplication } = require("./persistent-application");
 
-function executorFromRows() {
-  const calls = [];
+function executorFromRows(calls = []) {
   return {
     calls,
     async query(sql, params = []) {
       calls.push({ sql, params });
       if (sql.startsWith("INSERT INTO clients")) return { rows: [{ id: params[0], client_type: params[1], status: params[2], created_at: params[3], updated_at: params[4] }] };
+      if (sql.startsWith("INSERT INTO matters")) return { rows: [{ id: params[0], client_id: params[1], status: params[2] }] };
       if (sql.startsWith("SELECT * FROM clients")) return { rows: [{ id: params[0], client_type: "individual", status: "prospective" }] };
       return { rows: [] };
     }
@@ -19,9 +19,9 @@ function executorFromRows() {
 
 const testProvider = Object.freeze({ execute: async ({ task }) => ({ task, output: "test" }) });
 
-function transactionProvider(events) {
+function transactionProvider(events, txExecutor) {
   return {
-    begin: async () => ({ id: "tx-1" }),
+    begin: async () => ({ id: "tx-1", query: txExecutor.query.bind(txExecutor) }),
     commit: async (tx) => events.push(["commit", tx.id]),
     rollback: async (tx) => events.push(["rollback", tx.id])
   };
@@ -30,7 +30,7 @@ function transactionProvider(events) {
 test("persistent application composes the full runtime over SQL repositories", async () => {
   const executor = executorFromRows();
   const events = [];
-  const app = createPersistentApplication({ executor, provider: testProvider, ...transactionProvider(events) });
+  const app = createPersistentApplication({ executor, provider: testProvider, ...transactionProvider(events, executor) });
 
   assert.ok(app.application.crm);
   assert.ok(app.application.intake);
@@ -47,12 +47,29 @@ test("persistent application composes the full runtime over SQL repositories", a
   assert.equal(events.length, 0);
 });
 
+test("persistent client-matter operation binds both writes to the transaction executor", async () => {
+  const calls = [];
+  const executor = executorFromRows(calls);
+  const events = [];
+  const app = createPersistentApplication({ executor, provider: testProvider, ...transactionProvider(events, executor) });
+  const result = await app.operations.createClientMatter({
+    client: { id: "client-2", clientType: "individual", status: "prospective" },
+    matter: { id: "matter-2", status: "lead" },
+    actor: { id: "actor-1" }
+  });
+  assert.deepEqual(result, { client: { id: "client-2", clientType: "individual", status: "prospective" }, matter: { id: "matter-2", clientId: "client-2", status: "lead" } });
+  assert.equal(calls.filter((call) => call.sql.startsWith("INSERT INTO clients")).length, 1);
+  assert.equal(calls.filter((call) => call.sql.startsWith("INSERT INTO matters")).length, 1);
+  assert.deepEqual(events, [["commit", "tx-1"]]);
+});
+
 test("persistent application composes matter authorization when configured", async () => {
   const events = [];
+  const executor = executorFromRows();
   const app = createPersistentApplication({
-    executor: executorFromRows(),
+    executor,
     provider: testProvider,
-    ...transactionProvider(events),
+    ...transactionProvider(events, executor),
     resolveMatterAccess: async ({ actor, matterId }) => actor.id === "actor-1" && matterId === "matter-1"
   });
   assert.ok(app.authorization);
