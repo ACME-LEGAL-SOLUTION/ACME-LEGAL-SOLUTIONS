@@ -35,16 +35,19 @@ jobs:
             host_port: 5432
             container_port: 5432
             url: postgresql://postgres:acme@127.0.0.1:5432/acme
+            health_cmd: pg_isready -U postgres -d acme
           - provider: mysql
             image: mysql:8.4
             host_port: 3306
             container_port: 3306
             url: mysql://root:acme@127.0.0.1:3306/acme
+            health_cmd: mysqladmin ping -h 127.0.0.1 -uroot -pacme
           - provider: mariadb
             image: mariadb:11
             host_port: 3307
             container_port: 3306
             url: mariadb://root:acme@127.0.0.1:3307/acme
+            health_cmd: healthcheck.sh --connect --innodb_initialized
     services:
       db:
         image: ${{ matrix.image }}
@@ -60,8 +63,10 @@ jobs:
         ports:
           - ${{ matrix.host_port }}:${{ matrix.container_port }}
         options: >-
+          --health-cmd "${{ matrix.health_cmd }}"
           --health-interval 5s
           --health-timeout 5s
+          --health-start-period 10s
           --health-retries 30
     steps:
       - name: Checkout
@@ -98,6 +103,6 @@ jobs:
           ACME_ENV: production
           ACME_REAL_DB_PROVIDER: sqlite
           ACME_REAL_DB_ALLOW_MUTATION: "true"
-          ACME_REAL_DB_CLIENT_MODULE: ./api/persistence/ci-real-db-clients-v2.js
+          ACME_REAL_DB_CLIENT_MODULE: ./api/persistence/ci-real-db-clients.js
           ACME_REAL_DB_URL: file:///tmp/acme-ci.sqlite
         run: npm run test:integration
