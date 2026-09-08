@@ -63,13 +63,24 @@ async function invoke(service, operation, input, actor) {
 }
 
 function resolveHttpApplication(application) {
-  if (!application?.application || !application?.crmOperations) return application;
+  if (!application?.application) return application;
   const runtime = application.application;
-  return Object.freeze({ ...runtime, crm: Object.freeze({
+  const crm = application.crmOperations ? Object.freeze({
     ...runtime.crm,
     createClient: (input, actor) => application.crmOperations.createClient({ client: input, actor }),
     createMatter: (input, actor) => application.crmOperations.createMatter({ matter: input, actor })
-  }) });
+  }) : runtime.crm;
+  if (!application.matterDomainOperations) return Object.freeze({ ...runtime, crm });
+  const domain = application.matterDomainOperations;
+  return Object.freeze({
+    ...runtime,
+    crm,
+    party: Object.freeze({ ...runtime.party, createParty: (input, actor) => domain.addParty({ actor, matterId: input.matterId, party: input }) }),
+    relationship: Object.freeze({ ...runtime.relationship, createRelationship: (input, actor) => domain.addRelationship({ actor, matterId: input.matterId, relationship: input }) }),
+    conflict: Object.freeze({ ...runtime.conflict, checkMatter: (input, actor) => domain.recordConflictCheck({ actor, matterId: input.matterId, conflict: input }) }),
+    document: Object.freeze({ ...runtime.document, createDocument: (input, actor) => domain.addDocument({ actor, matterId: input.matterId, document: input }) }),
+    evidence: Object.freeze({ ...runtime.evidence, createEvidence: (input, actor) => domain.addEvidence({ actor, matterId: input.matterId, evidence: input }) })
+  });
 }
 
 function createHttpServer({ application, repositories, authenticate = async () => null, publicActor = PUBLIC_ACTOR } = {}) {
