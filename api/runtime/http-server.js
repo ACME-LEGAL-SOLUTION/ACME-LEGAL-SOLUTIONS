@@ -62,9 +62,19 @@ async function invoke(service, operation, input, actor) {
   throw Object.assign(new Error(`Unsupported service operation: ${operation}`), { statusCode: 501 });
 }
 
+function resolveHttpApplication(application) {
+  if (!application?.application || !application?.crmOperations) return application;
+  const runtime = application.application;
+  return Object.freeze({ ...runtime, crm: Object.freeze({
+    ...runtime.crm,
+    createClient: (input, actor) => application.crmOperations.createClient({ client: input, actor }),
+    createMatter: (input, actor) => application.crmOperations.createMatter({ matter: input, actor })
+  }) });
+}
+
 function createHttpServer({ application, repositories, authenticate = async () => null, publicActor = PUBLIC_ACTOR } = {}) {
   const storage = createStorageProvider({ repositories });
-  const runtime = application || createApplicationRuntime({ repositories: storage.repositories, provider: { execute: async () => ({ answer: "draft" }) } });
+  const runtime = resolveHttpApplication(application || createApplicationRuntime({ repositories: storage.repositories, provider: { execute: async () => ({ answer: "draft" }) } }));
   const boundary = createHttpBoundary({ application: runtime, authenticate, publicActor });
   return http.createServer(async (request, response) => {
     try {
@@ -80,4 +90,4 @@ function createHttpServer({ application, repositories, authenticate = async () =
 }
 
 if (require.main === module) { const port = Number(process.env.PORT || 3000); createHttpServer().listen(port, () => console.log(`ACME API listening on ${port}`)); }
-module.exports = { MAX_BODY_BYTES, OPERATIONS, PUBLIC_ACTOR, createHttpServer, invoke, operationFor, readJsonBody };
+module.exports = { MAX_BODY_BYTES, OPERATIONS, PUBLIC_ACTOR, createHttpServer, invoke, operationFor, readJsonBody, resolveHttpApplication };
