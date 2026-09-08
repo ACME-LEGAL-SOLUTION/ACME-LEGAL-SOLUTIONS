@@ -8,6 +8,12 @@ function sha256(text) {
   return crypto.createHash("sha256").update(text, "utf8").digest("hex");
 }
 
+function gitBlobSha1(text) {
+  const content = Buffer.from(text, "utf8");
+  const header = Buffer.from(`blob ${content.length}\0`, "utf8");
+  return crypto.createHash("sha1").update(Buffer.concat([header, content])).digest("hex");
+}
+
 function loadManifest(manifestPath) {
   const absolute = path.resolve(manifestPath);
   return JSON.parse(fs.readFileSync(absolute, "utf8"));
@@ -20,6 +26,9 @@ function validateManifest(manifest) {
   for (const migration of manifest.migrations) {
     if (!migration.version || !migration.file || !migration.schema || !migration.checksum) {
       throw new Error(`Incomplete migration: ${migration.version || "unknown"}`);
+    }
+    if (!migration.checksumAlgorithm || !["sha256", "git-blob-sha1"].includes(migration.checksumAlgorithm)) {
+      throw new Error(`Unsupported migration checksum algorithm: ${migration.version}`);
     }
   }
   return true;
@@ -35,6 +44,20 @@ function buildMigrationPlan({ manifest, rootDir }) {
     if (!fs.existsSync(schemaPath)) throw new Error(`Schema file missing: ${migration.schema}`);
     return Object.freeze({ ...migration, migrationPath, schemaPath });
   });
+}
+
+function checksumForContent(content, algorithm = "sha256") {
+  if (algorithm === "git-blob-sha1") return gitBlobSha1(content);
+  return sha256(content);
+}
+
+function verifyMigrationSources({ plan }) {
+  for (const migration of plan || []) {
+    const schema = fs.readFileSync(migration.schemaPath, "utf8");
+    const actual = checksumForContent(schema, migration.checksumAlgorithm);
+    if (actual !== migration.checksum) throw new Error(`Migration source checksum drift: ${migration.version}`);
+  }
+  return true;
 }
 
 function verifyAppliedMigrations({ manifest, applied }) {
@@ -56,15 +79,17 @@ function pendingMigrations({ manifest, applied }) {
     .sort((a, b) => a.version.localeCompare(b.version));
 }
 
-function migrationChecksum(content) {
-  return sha256(content);
+function migrationChecksum(content, algorithm = "sha256") {
+  return checksumForContent(content, algorithm);
 }
 
 module.exports = {
   loadManifest,
   validateManifest,
   buildMigrationPlan,
+  verifyMigrationSources,
   verifyAppliedMigrations,
   pendingMigrations,
-  migrationChecksum
+  migrationChecksum,
+  checksumForContent
 };
