@@ -20,6 +20,18 @@ const STATES = Object.freeze([
   "archived"
 ]);
 
+const ALLOWED_TRANSITIONS = Object.freeze({
+  lead: ["verified"],
+  verified: ["conflict_check"],
+  conflict_check: ["matter_open"],
+  matter_open: ["active"],
+  active: ["review"],
+  review: ["resolved"],
+  resolved: ["closed"],
+  closed: ["archived"],
+  archived: []
+});
+
 const HUMAN_GATED_STATES = new Set(["resolved", "closed", "archived"]);
 
 function createRuntime({ repositories = {}, audit = null, clock = () => new Date() } = {}) {
@@ -60,6 +72,11 @@ function createRuntime({ repositories = {}, audit = null, clock = () => new Date
       if (!STATES.includes(nextStatus)) throw new Error(`Invalid matter status: ${nextStatus}`);
       if (!actor?.id) throw new Error("Authenticated actor is required");
 
+      const allowed = ALLOWED_TRANSITIONS[matter.status] || [];
+      if (!allowed.includes(nextStatus)) {
+        throw new Error(`Invalid matter transition: ${matter.status} -> ${nextStatus}`);
+      }
+
       if (HUMAN_GATED_STATES.has(nextStatus) && review?.approved !== true) {
         throw new Error("Human review and approval are required before this transition");
       }
@@ -82,4 +99,4 @@ function createRuntime({ repositories = {}, audit = null, clock = () => new Date
   return runtime;
 }
 
-module.exports = { STATES, createRuntime };
+module.exports = { STATES, ALLOWED_TRANSITIONS, HUMAN_GATED_STATES, createRuntime };
