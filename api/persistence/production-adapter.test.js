@@ -21,11 +21,16 @@ function repositories() {
   };
 }
 
+const migrationControls = {
+  readAppliedMigrations: async () => [],
+  ensureMigrationLedger: async () => {},
+  acquireLock: async () => {},
+  releaseLock: async () => {}
+};
+
 test("production adapter requires an explicit production transaction", () => {
   assert.throws(() => createProductionAdapter({
-    config: config(), repositories: repositories(),
-    readAppliedMigrations: async () => [],
-    acquireLock: async () => {}, releaseLock: async () => {}
+    config: config(), repositories: repositories(), ...migrationControls
   }), /Transactional persistence provider is not configured/);
 });
 
@@ -33,13 +38,13 @@ test("production adapter exposes transaction, migration controls, and PostgreSQL
   const adapter = createProductionAdapter({
     config: config(), repositories: repositories(),
     transaction: { run: async (work) => work({ query: async () => {} }) },
-    readAppliedMigrations: async () => [],
-    acquireLock: async () => {}, releaseLock: async () => {}
+    ...migrationControls
   });
   assert.equal(adapter.provider, "postgresql");
   assert.equal(adapter.dialect.bind("SELECT ?", ["x"]).sql, "SELECT $1");
   assert.equal(typeof adapter.transaction.run, "function");
   assert.equal(typeof adapter.readAppliedMigrations, "function");
+  assert.equal(typeof adapter.ensureMigrationLedger, "function");
   assert.equal(typeof adapter.acquireLock, "function");
   assert.equal(typeof adapter.releaseLock, "function");
 });
@@ -48,8 +53,7 @@ test("production adapter preserves question-mark binding for MySQL", () => {
   const adapter = createProductionAdapter({
     config: config("mysql"), repositories: repositories(),
     transaction: { run: async (work) => work({ query: async () => {} }) },
-    readAppliedMigrations: async () => [],
-    acquireLock: async () => {}, releaseLock: async () => {}
+    ...migrationControls
   });
   assert.equal(adapter.dialect.bind("SELECT ?", ["x"]).sql, "SELECT ?");
 });
