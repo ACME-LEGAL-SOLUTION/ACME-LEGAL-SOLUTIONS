@@ -1,0 +1,63 @@
+"use strict";
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const path = require("node:path");
+const { loadManifest } = require("./migration-engine");
+const { createMigrationRunner } = require("./migration-runner");
+
+const rootDir = path.resolve(__dirname, "../..");
+const manifest = loadManifest(path.join(rootDir, "api/persistence/migration-manifest.json"));
+
+function storageWith({ applied = [], queries = [], failQuery = false } = {}) {
+  const calls = [];
+  return {
+    calls,
+    readAppliedMigrations: async () => applied,
+    acquireLock: async () => calls.push("lock"),
+    releaseLock: async () => calls.push("unlock"),
+    transaction: { run: async (work) => {
+      calls.push("begin");
+      const tx = { query: async (sql, params) => {
+        calls.push([sql, params]);
+        queries.push([sql, params]);
+        if (failQuery) throw new Error("query failed");
+      }};
+      try { const result = await work(tx); calls.push("commit"); return result; }
+      catch (error) { calls.push("rollback"); throw error; }
+    }}
+  };
+}
+
+test("migration runner executes pending canonical schema and records checksum atomically", async () => {
+  const storage = storageWith();
+  const runner = createMigrationRunner({ manifest, rootDir, storage });
+  const result = await runner.migrate();
+  assert.deepEqual(result.applied, ["001_initial_relational_schema"]);
+  assert.equal(storage.calls[0], "lock");
+  assert.equal(storage.calls.at(-1), "unlock");
+  assert.equal(storage.calls.includes("commit"), true);
+  const insert = storage.calls.find((call) => Array.isArray(call) && String(call[0]).startsWith("INSERT INTO acme_migrations"));
+  assert.equal(insert[1][0], "001_initial_relational_schema");
+  assert.equal(insert[1][1], manifest.migrations[0].checksum);
+});
+
+test("migration runner rolls back failed migration work and releases lock", async () => {
+  const storage = storageWith({ failQuery: true });
+  const runner = createMigrationRunner({ manifest, rootDir, storage });
+  await assert.rejects(() => runner.migrate(), /query failed/);
+  assert.equal(storage.calls.includes("rollback"), true);
+  assert.equal(storage.calls.at(-1), "unlock");
+});
+
+test("migration runner rejects checksum drift before execution", () => {
+  const badManifest = JSON.parse(JSON.stringify(manifest));
+  badManifest.migrations[0].checksum = "tampered";
+  assert.throws(() => createMigrationRunner({ manifest: badManifest, rootDir, storage: storageWith() }), /Migration source checksum drift/);
+});
+
+test("migration runner leaves an already applied migration untouched", async () => {
+  const storage = storageWith({ applied: [{ version: manifest.migrations[0].version, checksum: manifest.migrations[0].checksum }] });
+  const result = await createMigrationRunner({ manifest, rootDir, storage }).migrate();
+  assert.deepEqual(result, { applied: [], pending: [] });
+  assert.deepEqual(storage.calls, ["lock", "unlock"]);
+});
