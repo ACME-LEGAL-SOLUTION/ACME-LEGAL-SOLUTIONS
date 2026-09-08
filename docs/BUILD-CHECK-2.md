@@ -1,0 +1,1 @@
+Build checkpoint: canonical matter authorization is implemented. Phase 2D is the next engineering slice: persistent CRM domain operations and authenticated HTTP integration.
