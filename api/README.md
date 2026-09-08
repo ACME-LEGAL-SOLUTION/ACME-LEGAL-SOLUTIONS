@@ -27,4 +27,10 @@ This directory defines the server-side contract boundary for authenticated ACME 
 - `/api/notifications`
 - `/api/audit`
 
-Provider, database, object-storage, payment, messaging and model choices intentionally remain configuration boundaries until the unresolved decisions in the master dossier are finalized.
+## Executable HTTP routes currently wired
+- `POST /api/clients` — authenticated client creation
+- `POST /api/matters` — authenticated matter creation scoped to an existing client
+- `POST /api/intake` — authenticated consultation intake creation
+- `POST /api/ai/research` — authenticated AI execution routed through human review
+
+The HTTP boundary authenticates before dispatch and keeps provider, database, object-storage, payment, messaging and model choices behind configuration boundaries. Production integrations remain unresolved until the decisions in the master dossier are finalized.
