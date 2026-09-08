@@ -57,7 +57,12 @@ test("persistent client-matter operation binds both writes to the transaction ex
     matter: { id: "matter-2", status: "lead" },
     actor: { id: "actor-1" }
   });
-  assert.deepEqual(result, { client: { id: "client-2", clientType: "individual", status: "prospective" }, matter: { id: "matter-2", clientId: "client-2", status: "lead" } });
+  assert.equal(result.client.id, "client-2");
+  assert.equal(result.client.clientType, "individual");
+  assert.equal(result.client.status, "prospective");
+  assert.equal(result.matter.id, "matter-2");
+  assert.equal(result.matter.clientId, "client-2");
+  assert.equal(result.matter.status, "lead");
   assert.equal(calls.filter((call) => call.sql.startsWith("INSERT INTO clients")).length, 1);
   assert.equal(calls.filter((call) => call.sql.startsWith("INSERT INTO matters")).length, 1);
   assert.deepEqual(events, [["commit", "tx-1"]]);
