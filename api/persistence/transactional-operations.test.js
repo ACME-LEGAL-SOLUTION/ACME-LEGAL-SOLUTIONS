@@ -43,6 +43,22 @@ test("client and matter creation shares one transaction", async () => {
   assert.equal(state.records[1][1].transaction.id, "tx-1");
 });
 
+test("transaction-scoped repository factory is used for multi-step writes", async () => {
+  const state = setup();
+  const scopedRecords = [];
+  const operations = createTransactionalOperations({
+    ...state,
+    repositoryFactory: (tx) => ({
+      clients: { create: async (value) => { scopedRecords.push(["client", tx.id, value]); return { id: value.id }; } },
+      matters: { create: async (value) => { scopedRecords.push(["matter", tx.id, value]); return { id: value.id, clientId: value.clientId }; } }
+    })
+  });
+  await operations.createClientMatter({ client: { id: "client-1" }, matter: { id: "matter-1" }, actor: { id: "actor-1" } });
+  assert.equal(state.records.length, 0);
+  assert.equal(scopedRecords[0][1], "tx-1");
+  assert.equal(scopedRecords[1][1], "tx-1");
+});
+
 test("failure in a multi-step operation rolls back", async () => {
   const state = setup();
   state.repositories.matters.create = async () => { throw new Error("matter write failed"); };
@@ -54,9 +70,12 @@ test("failure in a multi-step operation rolls back", async () => {
   assert.deepEqual(state.events, ["begin", "rollback"]);
 });
 
-test("generic transactional work receives the transaction and repositories", async () => {
+test("generic transactional work receives the transaction and scoped repositories", async () => {
   const state = setup();
-  const operations = createTransactionalOperations(state);
-  const value = await operations.run(async ({ tx, repositories }) => ({ tx: tx.id, hasClients: Boolean(repositories.clients) }));
-  assert.deepEqual(value, { tx: "tx-1", hasClients: true });
+  const operations = createTransactionalOperations({
+    ...state,
+    repositoryFactory: () => ({ clients: { marker: true } })
+  });
+  const value = await operations.run(async ({ tx, repositories }) => ({ tx: tx.id, marker: repositories.clients.marker }));
+  assert.deepEqual(value, { tx: "tx-1", marker: true });
 });
