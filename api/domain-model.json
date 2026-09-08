@@ -1,0 +1,19 @@
+{
+  "version": "1.0.0",
+  "entities": [
+    "User", "Person", "Organization", "Relationship", "Client", "Matter", "Party",
+    "Jurisdiction", "Authority", "Hearing", "Order", "Task", "Document", "EvidenceItem",
+    "Source", "LegalInstrument", "LegalVersion", "Citation", "KnowledgeRecord",
+    "AIInteraction", "HumanReview", "Partner", "Verification", "Engagement", "Fee",
+    "Invoice", "Payment", "AccountingEntry", "Subscription", "Notification", "AuditEvent"
+  ],
+  "governance": {
+    "ai": ["assistance", "human_review", "human_modification", "human_approval", "final_human_action"],
+    "document_access": "server_side_matter_scope",
+    "audit": "append_only_operational_record"
+  },
+  "legal_assertion": [
+    "assertion", "source", "jurisdiction", "issuing_authority", "effective_date",
+    "amendment_state", "verification_state", "ai_reasoning", "human_review"
+  ]
+}
