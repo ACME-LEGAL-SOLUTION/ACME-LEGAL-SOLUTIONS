@@ -7,7 +7,7 @@
       "file": "api/persistence/migrations/001_initial_relational_schema.sql",
       "schema": "api/persistence/schema/001_initial_relational_schema.sql",
       "checksumAlgorithm": "git-blob-sha1",
-      "checksum": "b66a5b9350266fab2176bbe50c3f4bf71e2f3daf",
+      "checksum": "8c18885822a0f959128487d093daa1eb3588b290",
       "rollback": "provider-specific-before-production-approval"
     }
   ],
