@@ -1,0 +1,29 @@
+{
+  "name": "professional-consultation-intake",
+  "version": "1.0.0",
+  "steps": [
+    "capture_client_statement",
+    "capture_documents",
+    "identity_or_email_verification_when_required",
+    "jurisdiction_and_authority",
+    "urgency",
+    "preliminary_analysis_and_source_retrieval",
+    "ocr_classification_and_evidence_metadata",
+    "conflict_check",
+    "matter_creation",
+    "professional_work_package",
+    "human_review",
+    "human_modification_or_approval",
+    "final_human_action",
+    "client_contact",
+    "tasks_dates_documents_billing",
+    "status_notifications",
+    "invoice_payment_receipt_accounting",
+    "close_archive"
+  ],
+  "state_machine": {
+    "initial": "intake",
+    "terminal": ["closed", "archived"],
+    "human_gate_required_before": ["final_human_action", "professional_resolution"]
+  }
+}
