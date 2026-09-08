@@ -9,21 +9,28 @@ const { createMatterAuthorization, createMatterScopedOperations } = require("../
 
 /**
  * Production composition seam: application services receive provider-neutral
- * repositories while the SQL driver and transaction implementation remain
- * injected. A transaction-aware executor may be supplied by begin().
+ * repositories while SQL and transactions remain injected.
  */
 function createPersistentApplication({ executor, begin, commit, rollback, provider, clock, resolveMatterAccess } = {}) {
   const { repositories } = createSqlRepositories({ executor });
   const transaction = createTransactionBoundary({ begin, commit, rollback });
   const storage = createTransactionalStorage({ repositories, transaction });
+  const scopedRepositoryFactory = (tx) => tx && typeof tx.query === "function"
+    ? createSqlRepositories({ executor: tx }).repositories
+    : repositories;
+
   const operations = createTransactionalOperations({
     transaction,
     repositories,
-    repositoryFactory: (tx) => tx && typeof tx.query === "function" ? createSqlRepositories({ executor: tx }).repositories : repositories
+    repositoryFactory: scopedRepositoryFactory
   });
   const application = createApplicationRuntime({ repositories, provider, clock });
-  const authorization = resolveMatterAccess ? createMatterAuthorization({ resolveAccess: resolveMatterAccess }) : null;
-  const matterOperations = authorization ? createMatterScopedOperations({ authorization, transaction }) : null;
+  const authorization = resolveMatterAccess
+    ? createMatterAuthorization({ resolveAccess: resolveMatterAccess })
+    : null;
+  const matterOperations = authorization
+    ? createMatterScopedOperations({ authorization, transaction, repositoryFactory: scopedRepositoryFactory })
+    : null;
 
   return Object.freeze({ application, repositories, storage, transaction, operations, authorization, matterOperations });
 }
