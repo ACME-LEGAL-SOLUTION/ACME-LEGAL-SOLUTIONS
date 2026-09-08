@@ -36,6 +36,7 @@ test("persistent application composes the full runtime over SQL repositories", a
   assert.ok(app.application.document);
   assert.ok(app.application.evidence);
   assert.ok(app.repositories.clients);
+  assert.ok(app.crmOperations);
   assert.equal(app.storage.assertProductionReady(), true);
 
   const client = await app.repositories.clients.create({ id: "client-1", clientType: "individual", status: "prospective", createdAt: "2026-09-09T00:00:00.000Z", updatedAt: "2026-09-09T00:00:00.000Z" });
@@ -54,6 +55,16 @@ test("persistent client-matter operation binds both writes to the transaction ex
   const result = await app.operations.createClientMatter({ client: { id: "client-2", clientType: "individual", status: "prospective" }, matter: { id: "matter-2", status: "lead" }, actor: { id: "actor-1" } });
   assert.equal(result.client.id, "client-2");
   assert.equal(result.matter.clientId, "client-2");
+  assert.deepEqual(events, [["commit", "tx-1"]]);
+});
+
+test("persistent CRM composition exposes the transaction-scoped client-matter operation", async () => {
+  const calls = [];
+  const executor = executorFromRows(calls);
+  const events = [];
+  const app = createPersistentApplication({ executor, provider: testProvider, ...transactionProvider(events, executor) });
+  const result = await app.crmOperations.createClientMatter({ client: { id: "client-3", clientType: "individual", status: "prospective" }, matter: { id: "matter-3", status: "lead" }, actor: { id: "actor-1" } });
+  assert.equal(result.matter.clientId, "client-3");
   assert.equal(calls.filter((call) => call.sql.startsWith("INSERT INTO clients")).length, 1);
   assert.equal(calls.filter((call) => call.sql.startsWith("INSERT INTO matters")).length, 1);
   assert.deepEqual(events, [["commit", "tx-1"]]);
