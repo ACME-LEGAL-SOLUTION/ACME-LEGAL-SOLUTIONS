@@ -15,7 +15,7 @@ function createPersistentApplication({ executor, begin, commit, rollback, provid
   const storage = createTransactionalStorage({ repositories, transaction });
   const application = createApplicationRuntime({ repositories, provider, clock });
 
-  return Object.freeze({ application, repositories: storage, transaction });
+  return Object.freeze({ application, repositories, storage, transaction });
 }
 
 module.exports = { createPersistentApplication };
