@@ -9,6 +9,29 @@ const { createHttpBoundary } = require("./http-boundary");
 const MAX_BODY_BYTES = 64 * 1024;
 const PUBLIC_ACTOR = Object.freeze({ id: "website-public-intake", type: "system", scope: "public-intake" });
 
+const OPERATIONS = Object.freeze({
+  "/api/consultations": { POST: ["submit"] },
+  "/api/clients": { POST: ["createClient"], GET: ["getClient"] },
+  "/api/matters": { POST: ["createMatter"], GET: ["getMatter"] },
+  "/api/parties": { POST: ["createParty"], GET: ["getParty"] },
+  "/api/relationships": { POST: ["createRelationship"], GET: ["getRelationship"] },
+  "/api/conflicts": { POST: ["checkMatter"], GET: ["getCheck"] },
+  "/api/documents": { POST: ["createDocument"], GET: ["getDocument"] },
+  "/api/evidence": { POST: ["createEvidence"], GET: ["getEvidence"] },
+  "/api/authorities": { POST: ["register"], GET: ["listByJurisdiction"] },
+  "/api/hearings": { POST: ["schedule"] },
+  "/api/diary": { POST: ["schedule"] },
+  "/api/sources": { POST: ["register"] },
+  "/api/legal-versions": { POST: ["create"] },
+  "/api/ai": { POST: ["execute"] },
+  "/api/ai/intake": { POST: ["execute"] },
+  "/api/ai/research": { POST: ["execute"] },
+  "/api/ai/review": { POST: ["execute"] },
+  "/api/reviews": { POST: ["create", "decide", "authorizeFinalAction"] },
+  "/api/partners": { POST: ["verify", "register"] },
+  "/api/billing": { POST: ["createInvoice", "issue", "recordPayment"] }
+});
+
 function readJsonBody(request) {
   return new Promise((resolve, reject) => {
     let size = 0;
@@ -43,12 +66,41 @@ function json(response, statusCode, payload) {
   response.end(body);
 }
 
+function operationFor(path, method, input) {
+  const choices = OPERATIONS[path]?.[method];
+  if (!choices?.length) throw Object.assign(new Error("Method not allowed"), { statusCode: 405 });
+  if (choices.length === 1) return choices[0];
+  if (!input?.operation || !choices.includes(input.operation)) {
+    throw Object.assign(new Error(`Operation is required; expected one of: ${choices.join(", ")}`), { statusCode: 400 });
+  }
+  return input.operation;
+}
+
+async function invoke(service, operation, input, actor, request) {
+  if (typeof service[operation] !== "function") throw Object.assign(new Error(`Service operation is not implemented: ${operation}`), { statusCode: 501 });
+  if (["createClient", "getClient", "createMatter", "getMatter", "createParty", "getParty", "createRelationship", "getRelationship", "checkMatter", "getCheck", "createDocument", "getDocument", "createEvidence", "getEvidence"].includes(operation)) {
+    const id = input.id || input.recordId;
+    const payload = ["getClient", "getMatter", "getParty", "getRelationship", "getCheck", "getDocument", "getEvidence"].includes(operation) ? id : input;
+    return service[operation](payload, actor);
+  }
+  if (operation === "submit") return service.submit(input, actor);
+  if (operation === "execute") return service.execute({ ...input, actor });
+  if (operation === "register") return service.register({ ...input, actor });
+  if (operation === "create") return service.create({ ...input, actor });
+  if (operation === "verify") return service.verify(input.record || input, actor, input.verificationState);
+  if (operation === "schedule") return service.schedule({ ...input, actor });
+  if (operation === "createInvoice") return service.createInvoice({ ...input, actor });
+  if (operation === "issue") return service.issue(input.invoice || input, actor);
+  if (operation === "recordPayment") return service.recordPayment({ ...input, actor });
+  if (operation === "decide") return service.decide(input.review || input, actor, input.decision);
+  if (operation === "authorizeFinalAction") return service.authorizeFinalAction(input.review || input, actor);
+  if (operation === "listByJurisdiction") return service.listByJurisdiction(input.jurisdiction);
+  throw Object.assign(new Error(`Unsupported service operation: ${operation}`), { statusCode: 501 });
+}
+
 function createHttpServer({ application, authenticate = async () => null, publicActor = PUBLIC_ACTOR } = {}) {
-  const runtime = application || createApplicationRuntime({
-    repositories: createApplicationRepositories(),
-    provider: { execute: async () => ({ answer: "draft" }) }
-  });
-  const boundary = createHttpBoundary({ runtime, application: runtime, authenticate, publicActor });
+  const runtime = application || createApplicationRuntime({ repositories: createApplicationRepositories(), provider: { execute: async () => ({ answer: "draft" }) } });
+  const boundary = createHttpBoundary({ application: runtime, authenticate, publicActor });
 
   return http.createServer(async (request, response) => {
     try {
@@ -59,15 +111,10 @@ function createHttpServer({ application, authenticate = async () => null, public
       const url = new URL(request.url, "http://localhost");
       if (url.pathname === "/health") return json(response, 200, { status: "ok" });
       if (!Object.prototype.hasOwnProperty.call(boundary.routes, url.pathname)) return json(response, 404, { error: "Not found" });
-      if (request.method !== "POST") return json(response, 405, { error: "Method not allowed" });
-      if (!String(request.headers["content-type"] || "").toLowerCase().includes("application/json")) return json(response, 415, { error: "Content-Type must be application/json" });
-
-      const input = await readJsonBody(request);
+      const input = request.method === "GET" ? Object.fromEntries(url.searchParams.entries()) : await (String(request.headers["content-type"] || "").toLowerCase().includes("application/json") ? readJsonBody(request) : Promise.reject(Object.assign(new Error("Content-Type must be application/json"), { statusCode: 415 })));
       const resolved = await boundary.resolve(url.pathname, request);
-      let result;
-      if (url.pathname === "/api/consultations") result = await resolved.service.submit(input, resolved.actor);
-      else throw Object.assign(new Error("Route handler is not implemented"), { statusCode: 501 });
-      return json(response, 200, result);
+      const operation = operationFor(url.pathname, request.method, input);
+      return json(response, 200, await invoke(resolved.service, operation, input, resolved.actor, request));
     } catch (error) {
       const status = Number.isInteger(error.statusCode) ? error.statusCode : /required|Invalid|incomplete/i.test(error.message || "") ? 400 : 500;
       return json(response, status, { error: error.message || "Internal server error" });
@@ -80,4 +127,4 @@ if (require.main === module) {
   createHttpServer().listen(port, () => console.log(`ACME API listening on ${port}`));
 }
 
-module.exports = { MAX_BODY_BYTES, PUBLIC_ACTOR, createHttpServer, readJsonBody };
+module.exports = { MAX_BODY_BYTES, OPERATIONS, PUBLIC_ACTOR, createHttpServer, invoke, operationFor, readJsonBody };
