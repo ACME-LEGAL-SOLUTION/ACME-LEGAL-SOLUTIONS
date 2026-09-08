@@ -7,10 +7,6 @@ const { RESULTS, createConflictService } = require("./conflict-service");
 
 test("conflict service records a deterministic check", async () => {
   const repositories = createRepositories({ clock: () => new Date("2026-01-03T00:00:00.000Z") });
-  repositories.conflicts = repositories.conflicts || {
-    create: async (input) => ({ ...input, id: "conflict-1" }),
-    getById: async (id) => id === "conflict-1" ? { id } : null
-  };
   const service = createConflictService({
     repositories,
     clock: () => new Date("2026-01-03T00:00:00.000Z")
@@ -22,7 +18,7 @@ test("conflict service records a deterministic check", async () => {
     result: "clear"
   }, { id: "human-conflict-1" });
 
-  assert.equal(result.id, "conflict-1");
+  assert.match(result.id, /^[0-9a-f-]{36}$/);
   assert.deepEqual(result.partyIds, ["party-a", "party-b"]);
   assert.equal(result.checkedBy, "human-conflict-1");
   assert.equal(result.checkedAt, "2026-01-03T00:00:00.000Z");
@@ -30,10 +26,6 @@ test("conflict service records a deterministic check", async () => {
 
 test("conflict service rejects incomplete or unauthenticated checks", async () => {
   const repositories = createRepositories();
-  repositories.conflicts = {
-    create: async (input) => input,
-    getById: async () => null
-  };
   const service = createConflictService({ repositories });
 
   await assert.rejects(
