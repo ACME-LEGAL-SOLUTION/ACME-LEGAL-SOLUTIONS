@@ -1,6 +1,5 @@
 const $=(s,c=document)=>c.querySelector(s);const $$=(s,c=document)=>[...c.querySelectorAll(s)];
-const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const API_BASE='/api';
+const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;const API_BASE='/api';
 addEventListener('load',()=>setTimeout(()=>$('.loader')?.classList.add('done'),350));
 const header=$('[data-header]'),progress=$('[data-progress]');
 addEventListener('scroll',()=>{const max=document.documentElement.scrollHeight-innerHeight;if(progress)progress.style.width=`${max>0?(scrollY/max)*100:0}%`;header?.classList.toggle('scrolled',scrollY>40)},{passive:true});
@@ -11,25 +10,14 @@ const toggle=$('.menu-toggle'),nav=$('.site-nav');toggle?.addEventListener('clic
 $$('.node').forEach(n=>n.addEventListener('click',()=>{world?.setAttribute('aria-label',`${n.dataset.node} selected`);$$('.node').forEach(x=>x.removeAttribute('aria-current'));n.setAttribute('aria-current','true')}));
 if(!reduced&&matchMedia('(pointer:fine)').matches){addEventListener('pointermove',e=>{const x=(e.clientX/innerWidth-.5)*10,y=(e.clientY/innerHeight-.5)*10;world?.style.setProperty('--mx',`${x}px`);world?.style.setProperty('--my',`${y}px`)},{passive:true})}
 
-async function submitConsultation(payload){
-  const response=await fetch(`${API_BASE}/consultations`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(payload)});
-  const body=await response.json().catch(()=>({}));
-  if(!response.ok)throw new Error(body.error||'Consultation request could not be submitted');
-  return body;
-}
+async function submitConsultation(payload){const response=await fetch(`${API_BASE}/consultations`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(payload)});const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.error||'Consultation request could not be submitted');return body;}
 
-const consultationForm=$('[data-consultation-form]');
-consultationForm?.addEventListener('submit',async event=>{
-  event.preventDefault();
-  const status=$('[data-form-status]',consultationForm),button=consultationForm.querySelector('button[type="submit"]');
-  const data=Object.fromEntries(new FormData(consultationForm).entries());
-  if(status)status.textContent='Submitting securely…';
-  if(button)button.disabled=true;
-  try{
-    const result=await submitConsultation(data);
-    consultationForm.reset();
-    if(status)status.textContent=result.message||'Your consultation request has been received.';
-  }catch(error){
-    if(status)status.textContent=error.message;
-  }finally{if(button)button.disabled=false;}
-});
+function openConsultation(){
+  if($('.consultation-modal'))return $('.consultation-modal input')?.focus();
+  const modal=document.createElement('div');modal.className='consultation-modal';modal.innerHTML=`<div class="consultation-panel" role="dialog" aria-modal="true" aria-labelledby="consultation-title"><button class="consultation-close" type="button" aria-label="Close consultation">×</button><p class="eyebrow">ACME / CONSULTATION</p><h2 id="consultation-title">Bring ACME <em>the matter.</em></h2><p>Share the essential facts. This is an intake request, not a final legal opinion.</p><form data-consultation-form><label>Name<input name="name" autocomplete="name" required></label><label>Email<input name="email" type="email" autocomplete="email" required></label><label>Phone<input name="phone" type="tel" autocomplete="tel"></label><label>Subject<input name="subject" required></label><label>Jurisdiction<input name="jurisdiction" placeholder="e.g. India, Hong Kong"></label><label>Urgency<select name="urgency"><option value="standard">Standard</option><option value="urgent">Urgent</option><option value="critical">Critical</option></select></label><label>Matter summary<textarea name="summary" rows="5" required></textarea></label><button class="button button-gold" type="submit">Submit consultation <span>↗</span></button><p class="form-status" data-form-status role="status" aria-live="polite"></p></form></div>`;document.body.append(modal);
+  const form=$('[data-consultation-form]',modal),close=()=>modal.remove();$('.consultation-close',modal).addEventListener('click',close);modal.addEventListener('click',e=>{if(e.target===modal)close()});
+  form.addEventListener('submit',async e=>{e.preventDefault();const status=$('[data-form-status]',form),button=form.querySelector('button[type="submit"]');const data=Object.fromEntries(new FormData(form).entries());button.disabled=true;status.textContent='Submitting securely…';try{const result=await submitConsultation(data);form.reset();status.textContent=result.message||'Your consultation request has been received.'}catch(error){status.textContent=error.message}finally{button.disabled=false}});
+  $('.consultation-modal input',modal)?.focus();
+}
+$$('a[href^="mailto:"]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();openConsultation()}));
+$$('.floating a[href="#consultation"]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();openConsultation()}));
