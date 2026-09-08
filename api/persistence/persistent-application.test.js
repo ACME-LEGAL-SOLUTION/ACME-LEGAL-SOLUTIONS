@@ -35,7 +35,7 @@ test("persistent application composes the full runtime over SQL repositories", a
   assert.ok(app.application.document);
   assert.ok(app.application.evidence);
   assert.ok(app.repositories.clients);
-  assert.equal(app.repositories.assertProductionReady(), true);
+  assert.equal(app.storage.assertProductionReady(), true);
 
   const client = await app.repositories.clients.create({
     id: "client-1",
