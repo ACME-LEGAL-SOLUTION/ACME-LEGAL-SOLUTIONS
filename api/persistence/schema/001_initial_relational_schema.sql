@@ -2,12 +2,6 @@
 -- Vendor-neutral SQL contract. Do not run against production until a database
 -- vendor, hosting topology, backup/DR and encryption configuration are approved.
 
-CREATE TABLE acme_migrations (
-  version VARCHAR(32) PRIMARY KEY,
-  applied_at TIMESTAMP NOT NULL,
-  checksum VARCHAR(128) NOT NULL
-);
-
 CREATE TABLE clients (
   id VARCHAR(64) PRIMARY KEY,
   client_type VARCHAR(32) NOT NULL,
