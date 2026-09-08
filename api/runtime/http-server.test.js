@@ -61,16 +61,13 @@ test("HTTP server routes persistent CRM writes through the transaction boundary"
 test("HTTP application routes matter-domain writes through persistent scoped operations", async () => {
   const calls = [];
   const persistent = {
-    application: {
-      party: {}, relationship: {}, conflict: {}, document: {}, evidence: {}
-    },
+    application: { party: {}, relationship: {}, conflict: {}, document: {}, evidence: {} },
     matterDomainOperations: {
       addParty: async (value) => { calls.push(["party", value]); return { id: "party-1" }; },
       addRelationship: async (value) => { calls.push(["relationship", value]); return { id: "relationship-1" }; },
       recordConflictCheck: async (value) => { calls.push(["conflict", value]); return { id: "conflict-1" }; },
       addDocument: async (value) => { calls.push(["document", value]); return { id: "document-1" }; },
-      addEvidence: async (value) => { calls.push(["evidence", value]); return { id: "evidence-1" }
-      }
+      addEvidence: async (value) => { calls.push(["evidence", value]); return { id: "evidence-1" }; }
     }
   };
   const runtime = resolveHttpApplication(persistent);
