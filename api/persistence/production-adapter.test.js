@@ -12,13 +12,25 @@ function config(provider = "postgresql") {
   }});
 }
 
-function repositories() {
+function repositoryStub() {
   return {
-    clients: {}, matters: {}, relationships: {}, parties: {}, conflicts: {},
-    documents: {}, evidence: {}, aiInteractions: {}, reviews: {}, audit: {},
-    sources: {}, legalVersions: {}, authorities: {}, diary: {}, hearings: {},
-    invoices: {}, payments: {}, partners: {}
+    create: async (value) => value,
+    getById: async () => null,
+    list: async () => [],
+    update: async (value) => value
   };
+}
+
+function repositories() {
+  const collections = [
+    "clients", "matters", "relationships", "parties", "conflicts", "documents", "evidence",
+    "aiInteractions", "reviews", "audit", "sources", "legalVersions", "authorities",
+    "diary", "hearings", "invoices", "payments", "partners"
+  ];
+  const result = Object.fromEntries(collections.map((name) => [name, repositoryStub()]));
+  result.matters.transition = async (value) => value;
+  result.auditService = { append: async (event) => event };
+  return result;
 }
 
 const migrationControls = {
