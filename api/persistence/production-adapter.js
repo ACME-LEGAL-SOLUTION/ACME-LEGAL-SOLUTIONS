@@ -10,13 +10,14 @@ const PLACEHOLDER_FACTORIES = Object.freeze({
   sqlite: () => "?"
 });
 
-function createProductionAdapter({ config, repositories, transaction, readAppliedMigrations, acquireLock, releaseLock } = {}) {
+function createProductionAdapter({ config, repositories, transaction, readAppliedMigrations, ensureMigrationLedger, acquireLock, releaseLock } = {}) {
   if (!config || config.environment !== "production") {
     throw new Error("Production adapter requires production persistence configuration");
   }
   const placeholder = PLACEHOLDER_FACTORIES[config.provider];
   if (!placeholder) throw new Error(`Unsupported production database provider: ${config.provider}`);
   if (typeof readAppliedMigrations !== "function") throw new TypeError("Production adapter requires readAppliedMigrations");
+  if (typeof ensureMigrationLedger !== "function") throw new TypeError("Production adapter requires ensureMigrationLedger");
   if (typeof acquireLock !== "function" || typeof releaseLock !== "function") {
     throw new TypeError("Production adapter requires acquireLock and releaseLock");
   }
@@ -27,6 +28,7 @@ function createProductionAdapter({ config, repositories, transaction, readApplie
   return Object.freeze({
     ...storage,
     readAppliedMigrations,
+    ensureMigrationLedger,
     acquireLock,
     releaseLock,
     dialect: createSqlDialect({ provider: config.provider, placeholder })
