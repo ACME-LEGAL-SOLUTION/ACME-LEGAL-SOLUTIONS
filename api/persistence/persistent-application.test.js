@@ -68,13 +68,15 @@ test("persistent matter authorization denies before transaction and preserves ac
     executor,
     provider: testProvider,
     ...transactionProvider(events, executor),
-    resolveMatterAccess: async (input) => { decisions.push(input); return input.actor.id === "actor-1" && input.matterId === "matter-1" && input.action === "document.write"; }
+    resolveMatterAccess: async (input) => { decisions.push(input); return input.actor.id === "actor-1" && input.matterId === "matter-1" && input.action === "update"; }
   });
   await assert.rejects(() => app.matterOperations.run({ actor: { id: "actor-2" }, matterId: "matter-1", action: "update", work: async () => "no" }), /Matter access denied: update/);
   assert.deepEqual(events, []);
   assert.deepEqual(calls, []);
   assert.deepEqual(decisions[0], { actor: { id: "actor-2" }, matterId: "matter-1", action: "update" });
-  await assert.rejects(() => app.matterOperations.run({ actor: { id: "actor-1" }, matterId: "matter-1", action: "document.write", work: async ({ repositories }) => { await repositories.clients.create({ id: "scoped-client" }); return "ok"; } }), /Invalid matter action/);
+  const result = await app.matterOperations.run({ actor: { id: "actor-1" }, matterId: "matter-1", action: "update", work: async ({ tx }) => tx.id });
+  assert.equal(result, "tx-1");
+  assert.deepEqual(events, [["commit", "tx-1"]]);
 });
 
 test("persistent application refuses an incomplete transaction provider", () => {
