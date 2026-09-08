@@ -27,6 +27,8 @@ function createProductionAdapter({ config, repositories, transaction, readApplie
 
   return Object.freeze({
     ...storage,
+    config,
+    provider: config.provider,
     readAppliedMigrations,
     ensureMigrationLedger,
     acquireLock,
