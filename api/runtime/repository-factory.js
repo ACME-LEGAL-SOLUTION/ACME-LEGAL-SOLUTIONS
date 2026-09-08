@@ -19,6 +19,7 @@ function createApplicationRepositories({ clock = () => new Date() } = {}) {
   repositories.matters = {
     ...matters,
     async transition(id, status, actor, review = null) {
+      if (!actor?.id) throw new Error("Authenticated actor is required");
       return matters.update(id, {
         status,
         updatedAt: clock().toISOString(),
