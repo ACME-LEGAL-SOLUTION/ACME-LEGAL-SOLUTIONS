@@ -10,6 +10,9 @@ function createMigrationRunner({ manifest, rootDir, storage, dialect } = {}) {
   if (typeof storage.acquireLock !== "function" || typeof storage.releaseLock !== "function") {
     throw new TypeError("Migration storage must expose acquireLock and releaseLock");
   }
+  if (typeof storage.ensureMigrationLedger !== "function") {
+    throw new TypeError("Migration storage must expose ensureMigrationLedger");
+  }
   if (!dialect || typeof dialect.bind !== "function") {
     throw new TypeError("Migration SQL dialect is required");
   }
@@ -21,6 +24,7 @@ function createMigrationRunner({ manifest, rootDir, storage, dialect } = {}) {
   async function migrate() {
     await storage.acquireLock();
     try {
+      await storage.ensureMigrationLedger({ migrationTable });
       const applied = await storage.readAppliedMigrations();
       verifyAppliedMigrations({ manifest, applied });
       const appliedVersions = new Set((applied || []).map((record) => record.version));
