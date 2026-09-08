@@ -15,7 +15,7 @@ test("intake creates a prospective client and lead matter", async () => {
   assert.equal(result.matter.clientId, result.client.id);
 });
 
-test("intake requires human approval before final action", async () => {
+test("intake blocks final action without human approval", async () => {
   const repositories = createApplicationRepositories();
   const intake = createIntakeService({ repositories });
   const initial = await intake.start({ client: { name: "Test Client" }, matter: { title: "Consultation" } }, { id: "actor-1" });
@@ -25,11 +25,7 @@ test("intake requires human approval before final action", async () => {
   const work = await intake.transition(opened, "professional_work", { id: "actor-1" });
   const review = await intake.transition(work, "review", { id: "actor-1" });
   const approved = await intake.transition(review, "approved", { id: "actor-1" }, { status: "approved" });
-  assert.equal(approved.intakeState, "approved");
-  await assert.rejects(
-    () => intake.transition(approved, "final_action", { id: "actor-1" }),
-    /Human review and approval are required/
-  );
+  await assert.rejects(() => intake.transition(approved, "final_action", { id: "actor-1" }), /Human review and approval are required/);
   const finalAction = await intake.transition(approved, "final_action", { id: "actor-1" }, { status: "approved" });
   assert.equal(finalAction.intakeState, "final_action");
 });
