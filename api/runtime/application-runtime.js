@@ -10,6 +10,7 @@ const { createBillingService } = require("./billing-service");
 const { createNetworkService } = require("./network-service");
 const { createCrmService } = require("./crm-service");
 const { createIntakeService } = require("./intake-service");
+const { createConsultationService } = require("./consultation-service");
 const { createPartyService } = require("./party-service");
 const { createRelationshipService } = require("./relationship-service");
 const { createConflictService } = require("./conflict-service");
@@ -26,10 +27,12 @@ function createApplicationRuntime({ repositories, provider, clock = () => new Da
   const document = createDocumentService({ repositories, clock });
   const evidence = createEvidenceService({ repositories, clock });
   const intake = createIntakeService({ repositories, clock, conflictCheck });
+  const consultation = createConsultationService({ intake, clock });
   return Object.freeze({
     runtime,
     crm,
     intake,
+    consultation,
     party,
     relationship,
     conflict,
