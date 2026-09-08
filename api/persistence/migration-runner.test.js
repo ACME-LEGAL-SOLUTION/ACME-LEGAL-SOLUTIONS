@@ -14,6 +14,7 @@ function storageWith({ applied = [], queries = [], failQuery = false } = {}) {
   const calls = [];
   return {
     calls,
+    ensureMigrationLedger: async ({ migrationTable }) => calls.push(["ensure-ledger", migrationTable]),
     readAppliedMigrations: async () => applied,
     acquireLock: async () => calls.push("lock"),
     releaseLock: async () => calls.push("unlock"),
@@ -34,12 +35,18 @@ test("migration runner requires a SQL dialect", () => {
   assert.throws(() => createMigrationRunner({ manifest, rootDir, storage: storageWith() }), /SQL dialect is required/);
 });
 
-test("migration runner executes pending canonical schema and records checksum atomically", async () => {
+test("migration runner requires explicit migration ledger bootstrap", () => {
+  const storage = storageWith();
+  delete storage.ensureMigrationLedger;
+  assert.throws(() => createMigrationRunner({ manifest, rootDir, storage, dialect }), /ensureMigrationLedger/);
+});
+
+test("migration runner bootstraps ledger, executes pending canonical schema and records checksum atomically", async () => {
   const storage = storageWith();
   const runner = createMigrationRunner({ manifest, rootDir, storage, dialect });
   const result = await runner.migrate();
   assert.deepEqual(result.applied, ["001_initial_relational_schema"]);
-  assert.equal(storage.calls[0], "lock");
+  assert.deepEqual(storage.calls.slice(0, 2), ["lock", ["ensure-ledger", "acme_migrations"]]);
   assert.equal(storage.calls.at(-1), "unlock");
   assert.equal(storage.calls.includes("commit"), true);
   const insert = storage.calls.find((call) => Array.isArray(call) && String(call[0]).startsWith("INSERT INTO acme_migrations"));
@@ -66,5 +73,5 @@ test("migration runner leaves an already applied migration untouched", async () 
   const storage = storageWith({ applied: [{ version: manifest.migrations[0].version, checksum: manifest.migrations[0].checksum }] });
   const result = await createMigrationRunner({ manifest, rootDir, storage, dialect }).migrate();
   assert.deepEqual(result, { applied: [], pending: [] });
-  assert.deepEqual(storage.calls, ["lock", "unlock"]);
+  assert.deepEqual(storage.calls, ["lock", ["ensure-ledger", "acme_migrations"], "unlock"]);
 });
