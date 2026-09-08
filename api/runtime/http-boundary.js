@@ -18,7 +18,7 @@ const ROUTES = Object.freeze({
   "/api/ai/intake": "intake",
   "/api/ai/research": "ai",
   "/api/ai/review": "ai",
-  "/api/reviews": "ai",
+  "/api/reviews": "reviews",
   "/api/partners": "network",
   "/api/billing": "billing"
 });
