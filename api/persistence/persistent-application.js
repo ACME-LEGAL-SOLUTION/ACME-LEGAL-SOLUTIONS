@@ -5,6 +5,7 @@ const { createSqlRepositories } = require("./sql-repository-adapter");
 const { createTransactionalStorage } = require("./transactional-storage");
 const { createTransactionBoundary } = require("./transaction-contract");
 const { createTransactionalOperations } = require("./transactional-operations");
+const { createPersistentCrmOperations } = require("./persistent-crm-operations");
 const { createMatterAuthorization, createMatterScopedOperations } = require("../security/matter-authorization");
 
 /**
@@ -24,15 +25,31 @@ function createPersistentApplication({ executor, begin, commit, rollback, provid
     repositories,
     repositoryFactory: scopedRepositoryFactory
   });
-  const application = createApplicationRuntime({ repositories, provider, clock });
   const authorization = resolveMatterAccess
     ? createMatterAuthorization({ resolveAccess: resolveMatterAccess })
     : null;
   const matterOperations = authorization
     ? createMatterScopedOperations({ authorization, transaction, repositoryFactory: scopedRepositoryFactory })
     : null;
+  const crmOperations = createPersistentCrmOperations({
+    transaction,
+    repositories,
+    repositoryFactory: scopedRepositoryFactory,
+    matterAuthorization: authorization,
+    clock
+  });
+  const application = createApplicationRuntime({ repositories, provider, clock });
 
-  return Object.freeze({ application, repositories, storage, transaction, operations, authorization, matterOperations });
+  return Object.freeze({
+    application,
+    repositories,
+    storage,
+    transaction,
+    operations,
+    crmOperations,
+    authorization,
+    matterOperations
+  });
 }
 
 module.exports = { createPersistentApplication };
