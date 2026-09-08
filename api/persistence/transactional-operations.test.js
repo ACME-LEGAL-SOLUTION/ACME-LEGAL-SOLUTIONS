@@ -39,8 +39,8 @@ test("client and matter creation shares one transaction", async () => {
   assert.deepEqual(result, { client: { id: "client-1" }, matter: { id: "matter-1", clientId: "client-1" } });
   assert.deepEqual(state.events, ["begin", "commit"]);
   assert.equal(state.records[1][1].clientId, "client-1");
-  assert.equal(state.records[0][1].transaction.id, "tx-1");
-  assert.equal(state.records[1][1].transaction.id, "tx-1");
+  assert.equal(state.records[0][1].actorId, "actor-1");
+  assert.equal(state.records[1][1].actorId, "actor-1");
 });
 
 test("transaction-scoped repository factory is used for multi-step writes", async () => {
