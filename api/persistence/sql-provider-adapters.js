@@ -43,23 +43,34 @@ function createSqlProviderAdapter({ provider, config, client, migrationLockKey =
   const begin = async () => {
     const connection = await client.connect();
     if (!connection || typeof connection.query !== "function") throw new TypeError("SQL connection must expose query");
-    await connection.query("BEGIN");
-    return connection;
-  };
-
-  const releaseConnection = async (connection) => {
-    if (connection && typeof connection.release === "function") await connection.release();
-  };
-
-  const commit = async (connection) => {
     try {
-      await connection.query("COMMIT");
-    } finally {
+      await connection.query("BEGIN");
+      return connection;
+    } catch (error) {
       await releaseConnection(connection);
+      throw error;
     }
   };
 
+  const releaseConnection = async (connection) => {
+    if (!connection) return;
+    if (typeof connection.release === "function") {
+      await connection.release();
+      return;
+    }
+    if (typeof connection.close === "function") {
+      await connection.close();
+    }
+  };
+
+  const commit = async (connection) => {
+    if (!connection || typeof connection.query !== "function") throw new TypeError("Transaction connection is required");
+    await connection.query("COMMIT");
+    await releaseConnection(connection);
+  };
+
   const rollback = async (connection) => {
+    if (!connection || typeof connection.query !== "function") throw new TypeError("Transaction connection is required");
     try {
       await connection.query("ROLLBACK");
     } finally {
@@ -74,7 +85,11 @@ function createSqlProviderAdapter({ provider, config, client, migrationLockKey =
       await transaction.query(`CREATE TABLE IF NOT EXISTS ${table} (version VARCHAR(32) PRIMARY KEY, applied_at TIMESTAMP NOT NULL, checksum VARCHAR(128) NOT NULL)`);
       await commit(transaction);
     } catch (error) {
-      await rollback(transaction);
+      try {
+        await rollback(transaction);
+      } catch (rollbackError) {
+        error.rollbackError = rollbackError;
+      }
       throw error;
     }
   };
@@ -101,8 +116,9 @@ function createSqlProviderAdapter({ provider, config, client, migrationLockKey =
         const value = result && result.rows && result.rows[0] && Object.values(result.rows[0])[0];
         if (value === false || value === 0 || value === null) throw new Error(`Unable to acquire ${provider} migration lock`);
       } catch (error) {
-        await releaseConnection(lockConnection);
+        const connection = lockConnection;
         lockConnection = null;
+        await releaseConnection(connection);
         throw error;
       }
     }
