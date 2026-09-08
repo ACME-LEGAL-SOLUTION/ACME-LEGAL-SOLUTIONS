@@ -14,8 +14,17 @@ function createSqlDialect({ provider, placeholder = "?" } = {}) {
     provider,
     placeholder,
     bind(sql, params = []) {
+      if (typeof sql !== "string") throw new TypeError("SQL statement must be a string");
       if (!Array.isArray(params)) throw new TypeError("SQL parameters must be an array");
-      return { sql, params };
+      let index = 0;
+      const boundSql = sql.replace(/\?/g, () => {
+        index += 1;
+        return placeholder(index);
+      });
+      if (index !== params.length) {
+        throw new Error(`SQL placeholder count (${index}) does not match parameter count (${params.length})`);
+      }
+      return { sql: boundSql, params };
     }
   });
 }
