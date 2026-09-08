@@ -58,6 +58,33 @@ test("HTTP server routes persistent CRM writes through the transaction boundary"
   assert.equal(calls[0][2], actor);
 });
 
+test("HTTP application routes matter-domain writes through persistent scoped operations", async () => {
+  const calls = [];
+  const persistent = {
+    application: {
+      party: {}, relationship: {}, conflict: {}, document: {}, evidence: {}
+    },
+    matterDomainOperations: {
+      addParty: async (value) => { calls.push(["party", value]); return { id: "party-1" }; },
+      addRelationship: async (value) => { calls.push(["relationship", value]); return { id: "relationship-1" }; },
+      recordConflictCheck: async (value) => { calls.push(["conflict", value]); return { id: "conflict-1" }; },
+      addDocument: async (value) => { calls.push(["document", value]); return { id: "document-1" }; },
+      addEvidence: async (value) => { calls.push(["evidence", value]); return { id: "evidence-1" }
+      }
+    }
+  };
+  const runtime = resolveHttpApplication(persistent);
+  const actor = { id: "professional-3", roles: ["professional"] };
+  assert.equal((await runtime.party.createParty({ matterId: "matter-1", displayName: "Party" }, actor)).id, "party-1");
+  assert.equal((await runtime.relationship.createRelationship({ matterId: "matter-1", fromId: "party-1", toId: "party-2", type: "represents" }, actor)).id, "relationship-1");
+  assert.equal((await runtime.conflict.checkMatter({ matterId: "matter-1", result: "clear" }, actor)).id, "conflict-1");
+  assert.equal((await runtime.document.createDocument({ matterId: "matter-1", storageKey: "objects/doc-1", type: "pleading" }, actor)).id, "document-1");
+  assert.equal((await runtime.evidence.createEvidence({ matterId: "matter-1", documentId: "document-1", type: "exhibit" }, actor)).id, "evidence-1");
+  assert.deepEqual(calls.map(([kind]) => kind), ["party", "relationship", "conflict", "document", "evidence"]);
+  assert.equal(calls.every(([, value]) => value.actor === actor), true);
+  assert.equal(calls.every(([, value]) => value.matterId === "matter-1"), true);
+});
+
 test("HTTP server enforces authentication on non-public routes", async (t) => {
   const server = await running(); t.after(() => server.close());
   const result = await request(server, { method: "POST", path: "/api/clients", body: { name: "Blocked" } });
