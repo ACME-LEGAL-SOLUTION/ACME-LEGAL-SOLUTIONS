@@ -6,7 +6,8 @@
       "version": "001_initial_relational_schema",
       "file": "api/persistence/migrations/001_initial_relational_schema.sql",
       "schema": "api/persistence/schema/001_initial_relational_schema.sql",
-      "checksum": "CANONICAL_SCHEMA_V1",
+      "checksumAlgorithm": "git-blob-sha1",
+      "checksum": "b66a5b9350266fab2176bbe50c3f4bf71e2f3daf",
       "rollback": "provider-specific-before-production-approval"
     }
   ],
