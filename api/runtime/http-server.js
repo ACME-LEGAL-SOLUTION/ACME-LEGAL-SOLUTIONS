@@ -75,7 +75,7 @@ function createHttpServer({ application, repositories, authenticate = async () =
       const input = request.method === "GET" ? Object.fromEntries(url.searchParams.entries()) : await (String(request.headers["content-type"] || "").toLowerCase().includes("application/json") ? readJsonBody(request) : Promise.reject(Object.assign(new Error("Content-Type must be application/json"), { statusCode: 415 })));
       const resolved = await boundary.resolve(url.pathname, request); const operation = operationFor(url.pathname, request.method, input);
       return json(response, 200, await invoke(resolved.service, operation, input, resolved.actor));
-    } catch (error) { const status = Number.isInteger(error.statusCode) ? error.statusCode : error.code === "MATTER_ACCESS_DENIED" ? 403 : /required|Invalid|incomplete/i.test(error.message || "") ? 400 : 500; return json(response, status, { error: error.message || "Internal server error" }); }
+    } catch (error) { const status = Number.isInteger(error.statusCode) ? error.statusCode : error.code === "MATTER_ACCESS_DENIED" ? 403 : /Authenticated actor is required/i.test(error.message || "") ? 401 : /Invalid|incomplete/i.test(error.message || "") ? 400 : 500; return json(response, status, { error: error.message || "Internal server error" }); }
   });
 }
 
