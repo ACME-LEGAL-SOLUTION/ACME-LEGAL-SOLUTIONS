@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "description": "ACME Legal Solution application foundation",
   "scripts": {
-    "test": "node --test api/runtime/*.test.js",
+    "test": "node --test api/runtime/*.test.js api/persistence/*.test.js",
     "start": "node api/runtime/http-server.js",
     "smoke": "node api/runtime/server-smoke.js"
   },
