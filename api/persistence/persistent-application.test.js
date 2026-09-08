@@ -17,11 +17,14 @@ function executorFromRows() {
   };
 }
 
+const testProvider = Object.freeze({ execute: async ({ task }) => ({ task, output: "test" }) });
+
 test("persistent application composes the full runtime over SQL repositories", async () => {
   const executor = executorFromRows();
   const events = [];
   const app = createPersistentApplication({
     executor,
+    provider: testProvider,
     begin: async () => ({ id: "tx-1" }),
     commit: async (tx) => events.push(["commit", tx.id]),
     rollback: async (tx) => events.push(["rollback", tx.id])
@@ -53,7 +56,7 @@ test("persistent application composes the full runtime over SQL repositories", a
 test("persistent application refuses an incomplete transaction provider", () => {
   const executor = executorFromRows();
   assert.throws(
-    () => createPersistentApplication({ executor, begin: async () => ({}) }),
+    () => createPersistentApplication({ executor, provider: testProvider, begin: async () => ({}) }),
     /commit.*rollback functions are required/
   );
 });
