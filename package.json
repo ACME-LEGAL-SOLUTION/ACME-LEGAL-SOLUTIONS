@@ -1,0 +1,12 @@
+{
+  "name": "acme-legal-solutions",
+  "private": true,
+  "version": "0.1.0",
+  "description": "ACME Legal Solution application foundation",
+  "scripts": {
+    "test": "node --test api/runtime/*.test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
