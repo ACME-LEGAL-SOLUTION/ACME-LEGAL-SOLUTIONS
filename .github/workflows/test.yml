@@ -18,5 +18,69 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
       - name: Run tests
         run: npm test
+
+  real-database:
+    name: Real ${{ matrix.provider }} migration
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: [postgresql, mysql, mariadb, sqlite]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: acme
+          POSTGRES_DB: acme
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d acme"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: acme
+          MYSQL_DATABASE: acme
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -uroot -pacme"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: acme
+          MARIADB_DATABASE: acme
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Run real engine integration
+        env:
+          ACME_ENV: production
+          ACME_REAL_DB_PROVIDER: ${{ matrix.provider }}
+          ACME_REAL_DB_ALLOW_MUTATION: "true"
+          ACME_REAL_DB_CLIENT_MODULE: ./api/persistence/ci-real-db-clients.js
+          ACME_REAL_DB_URL: ${{ matrix.provider == 'postgresql' && 'postgresql://postgres:acme@127.0.0.1:5432/acme' || matrix.provider == 'mysql' && 'mysql://root:acme@127.0.0.1:3306/acme' || matrix.provider == 'mariadb' && 'mariadb://root:acme@127.0.0.1:3307/acme' || 'file:///tmp/acme-ci.sqlite' }}
+        run: npm run test:integration
