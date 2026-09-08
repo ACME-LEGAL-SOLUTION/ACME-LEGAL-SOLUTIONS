@@ -1,0 +1,1 @@
+Checkpoint: canonical authorization complete; Phase 2D is next.
