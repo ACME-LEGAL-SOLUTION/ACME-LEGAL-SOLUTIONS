@@ -13,5 +13,11 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "mariadb": "^3.4.5",
+    "mysql2": "^3.14.3",
+    "pg": "^8.16.3",
+    "sqlite3": "^5.1.7"
   }
 }
