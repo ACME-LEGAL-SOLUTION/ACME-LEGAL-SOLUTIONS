@@ -1,34 +1,20 @@
 "use strict";
 
 /**
- * Matter-scoped authorization boundary.
- *
- * Authorization is evaluated server-side against an injected policy/repository
- * adapter. This module intentionally does not trust browser-supplied scope or
- * roles and never exposes a persistence implementation to callers.
+ * Compatibility facade for existing runtime callers.
+ * Canonical matter authorization lives in ../security/matter-authorization.
  */
-
-const ACTIONS = Object.freeze(["read", "create", "update", "assign", "review", "close", "archive"]);
+const { ACTIONS, createMatterAuthorization } = require("../security/matter-authorization");
 
 function createAccessControl({ policy } = {}) {
   if (!policy?.can) throw new Error("Authorization policy is required");
+  const authorization = createMatterAuthorization({
+    resolveAccess: ({ actor, matterId, action }) => policy.can({ actor, action, matter: { id: matterId } })
+  });
 
-  async function authorize({ actor, action, matter }) {
-    if (!actor?.id) throw new Error("Authenticated actor is required");
-    if (!ACTIONS.includes(action)) throw new Error(`Invalid access action: ${action}`);
-    if (!matter?.id) throw new Error("Matter is required");
-
-    const allowed = await policy.can({ actor, action, matter });
-    if (allowed !== true) {
-      const error = new Error("Matter access denied");
-      error.code = "MATTER_ACCESS_DENIED";
-      throw error;
-    }
-
-    return true;
-  }
-
-  return { authorize };
+  return Object.freeze({
+    authorize: async ({ actor, action, matter }) => authorization.assert(actor, matter?.id, action)
+  });
 }
 
 module.exports = { ACTIONS, createAccessControl };
