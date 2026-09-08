@@ -1,6 +1,7 @@
 "use strict";
 
 const ROUTES = Object.freeze({
+  "/api/consultations": "consultation",
   "/api/clients": "crm",
   "/api/matters": "crm",
   "/api/parties": "party",
@@ -22,14 +23,14 @@ const ROUTES = Object.freeze({
   "/api/billing": "billing"
 });
 
-function createHttpBoundary({ application, authenticate }) {
+function createHttpBoundary({ application, authenticate, publicActor = null } = {}) {
   if (!application) throw new Error("Application runtime is required");
   if (typeof authenticate !== "function") throw new Error("Authentication adapter is required");
   return {
     async resolve(path, request) {
       const serviceName = ROUTES[path];
       if (!serviceName || !application[serviceName]) throw new Error(`Unsupported API route: ${path}`);
-      const actor = await authenticate(request);
+      const actor = path === "/api/consultations" && publicActor ? publicActor : await authenticate(request);
       if (!actor?.id) throw new Error("Authenticated actor is required");
       return { service: application[serviceName], actor, path };
     },
