@@ -1,0 +1,1 @@
+Phase 2D exit gate: persistent CRM operations, matter-scoped authorization, atomic transactions, rollback, append-only audit, and authenticated HTTP integration must be implemented and green in CI.
