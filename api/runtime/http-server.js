@@ -15,9 +15,9 @@ const OPERATIONS = Object.freeze({
   "/api/relationships": { POST: ["createRelationship"], GET: ["getRelationship"] }, "/api/conflicts": { POST: ["checkMatter"], GET: ["getCheck"] },
   "/api/documents": { POST: ["createDocument"], GET: ["getDocument"] }, "/api/evidence": { POST: ["createEvidence"], GET: ["getEvidence"] },
   "/api/authorities": { POST: ["register"], GET: ["listByJurisdiction"] }, "/api/hearings": { POST: ["schedule"] }, "/api/diary": { POST: ["schedule"] },
-  "/api/sources": { POST: ["register"] }, "/api/legal-versions": { POST: ["create"] }, "/api/ai": { POST: ["execute"] },
+  "/api/sources": { POST: ["register", "verify"] }, "/api/legal-versions": { POST: ["create"] }, "/api/ai": { POST: ["execute"] },
   "/api/ai/intake": { POST: ["execute"] }, "/api/ai/research": { POST: ["execute"] }, "/api/ai/review": { POST: ["execute"] },
-  "/api/reviews": { POST: ["create", "decide", "authorizeFinalAction"] }, "/api/partners": { POST: ["verify", "register"] },
+  "/api/reviews": { POST: ["create", "decide", "authorizeFinalAction"] }, "/api/partners": { POST: ["registerPartner", "verifyPartner"] },
   "/api/billing": { POST: ["createInvoice", "issue", "recordPayment"] }
 });
 
@@ -48,15 +48,18 @@ async function invoke(service, operation, input, actor) {
   if (operation === "submit") return service.submit(input, actor);
   if (operation === "execute") return service.execute({ ...input, actor });
   if (operation === "register") return service.register({ ...input, actor });
-  if (operation === "create") return service.create({ ...input, actor });
   if (operation === "verify") return service.verify(input.record || input, actor, input.verificationState);
+  if (operation === "registerPartner") return service.registerPartner({ ...input, actor });
+  if (operation === "verifyPartner") return service.verifyPartner(input.partner || input, actor, input.verificationState, input.evidence || []);
+  if (operation === "create") return service.create({ ...input, actor });
   if (operation === "schedule") return service.schedule({ ...input, actor });
-  if (operation === "createClient" || operation === "createMatter" || operation === "createParty" || operation === "createRelationship" || operation === "checkMatter" || operation === "createDocument" || operation === "createEvidence") return service[operation](input, actor);
+  if (["createClient", "createMatter", "createParty", "createRelationship", "checkMatter", "createDocument", "createEvidence"].includes(operation)) return service[operation](input, actor);
   if (operation === "createInvoice") return service.createInvoice({ ...input, actor });
   if (operation === "issue") return service.issue(input.invoice || input, actor);
   if (operation === "recordPayment") return service.recordPayment({ ...input, actor });
   if (operation === "decide") return service.decide(input.review || input, input.decision, actor, input.modification ?? null);
   if (operation === "authorizeFinalAction") return service.authorizeFinalAction(input.review || input, input.action, actor);
+  if (operation === "listByJurisdiction") return service.listByJurisdiction(input.jurisdiction);
   throw Object.assign(new Error(`Unsupported service operation: ${operation}`), { statusCode: 501 });
 }
 
