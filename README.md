@@ -24,6 +24,8 @@ Validated foundation currently includes:
 - Premium public website prototype with responsive/accessibility structure
 - Consultation / ASK ACME public intake boundary
 - Executable CRM, matter, party, relationship, conflict, document and evidence service boundaries
+- Canonical server-side, action-aware matter authorization boundary
+- Persistent matter operations bound to transaction-scoped repositories
 - Server-side authentication and matter-scope authorization contracts
 - Governed AI Gateway with human-review/final-action controls
 - Legal-source provenance and date-aware legal-version services
@@ -37,8 +39,12 @@ The current persistent layer is **provider-neutral**. A production database engi
 
 ### Latest validated CI
 
-- Commit: `1dcf05071e83eac98ef8860800b6ea89e645c26d`
+- Commit: `bcfc5c31dbc01b244aa0408f343afba4a1f82384`
 - Workflow: ACME Tests
 - Result: **87 / 87 tests passed**
+
+### Next implementation slice
+
+**Phase 2D — Persistent CRM domain operations and HTTP integration:** matter lifecycle transitions, party/relationship persistence, conflict-check recording, document/evidence registration, audit consistency, rollback verification, and authenticated HTTP execution over the persistent composition.
 
 See `docs/BUILD-PLAN.md` for the implementation roadmap and `docs/ARCHITECTURE.md` for the system boundary.
