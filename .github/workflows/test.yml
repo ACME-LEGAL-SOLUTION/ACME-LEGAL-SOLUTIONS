@@ -32,15 +32,18 @@ jobs:
         include:
           - provider: postgresql
             image: postgres:16
-            port: 5432
+            host_port: 5432
+            container_port: 5432
             url: postgresql://postgres:acme@127.0.0.1:5432/acme
           - provider: mysql
             image: mysql:8.4
-            port: 3306
+            host_port: 3306
+            container_port: 3306
             url: mysql://root:acme@127.0.0.1:3306/acme
           - provider: mariadb
             image: mariadb:11
-            port: 3307
+            host_port: 3307
+            container_port: 3306
             url: mariadb://root:acme@127.0.0.1:3307/acme
     services:
       db:
@@ -55,7 +58,7 @@ jobs:
           MARIADB_ROOT_HOST: "%"
           MARIADB_DATABASE: acme
         ports:
-          - ${{ matrix.port }}:3306
+          - ${{ matrix.host_port }}:${{ matrix.container_port }}
         options: >-
           --health-interval 5s
           --health-timeout 5s
