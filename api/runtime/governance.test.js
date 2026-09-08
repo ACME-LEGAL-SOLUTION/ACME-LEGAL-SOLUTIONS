@@ -1,5 +1,4 @@
 "use strict";
-
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const { createCollection } = require("./in-memory-repository");
@@ -17,17 +16,15 @@ function setup() {
 test("human review records and approves an AI proposal", async () => {
   const { auditRepo, reviews } = setup();
   const actor = { id: "reviewer-1" };
-  const review = await reviews.create({
-    matterId: "matter-1",
-    aiInteractionId: "ai-1",
-    proposedAction: "resolve",
-    output: { recommendation: "resolution draft" },
-    actor
-  });
+  const review = await reviews.create({ matterId: "matter-1", aiInteractionId: "ai-1", proposedAction: "resolve", output: { recommendation: "resolution draft" }, actor });
   const approved = await reviews.decide(review, "approved", actor);
   assert.equal(approved.status, "approved");
   assert.equal(approved.reviewedBy, actor.id);
-  assert.equal((await auditRepo.list()).length, 2);
+  const events = await auditRepo.list();
+  assert.equal(events.length, 2);
+  assert.ok(events.every((event) => event.id && event.eventType && event.actorId && event.createdAt));
+  assert.equal(events[0].eventType, "human_review.created");
+  assert.equal(events[1].eventType, "human_review.approved");
 });
 
 test("modified review requires explicit human modification", async () => {
