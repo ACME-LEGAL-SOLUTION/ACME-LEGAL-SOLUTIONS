@@ -23,47 +23,40 @@ jobs:
       - name: Run tests
         run: npm test
 
-  real-database:
+  real-sql:
     name: Real ${{ matrix.provider }} migration
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        provider: [postgresql, mysql, mariadb, sqlite]
+        include:
+          - provider: postgresql
+            image: postgres:16
+            port: 5432
+            url: postgresql://postgres:acme@127.0.0.1:5432/acme
+          - provider: mysql
+            image: mysql:8.4
+            port: 3306
+            url: mysql://root:acme@127.0.0.1:3306/acme
+          - provider: mariadb
+            image: mariadb:11
+            port: 3307
+            url: mariadb://root:acme@127.0.0.1:3307/acme
     services:
-      postgres:
-        image: postgres:16
+      db:
+        image: ${{ matrix.image }}
         env:
           POSTGRES_PASSWORD: acme
           POSTGRES_DB: acme
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d acme"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 20
-      mysql:
-        image: mysql:8.4
-        env:
           MYSQL_ROOT_PASSWORD: acme
+          MYSQL_ROOT_HOST: "%"
           MYSQL_DATABASE: acme
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd "mysqladmin ping -h 127.0.0.1 -uroot -pacme"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 30
-      mariadb:
-        image: mariadb:11
-        env:
           MARIADB_ROOT_PASSWORD: acme
+          MARIADB_ROOT_HOST: "%"
           MARIADB_DATABASE: acme
         ports:
-          - 3307:3306
+          - ${{ matrix.port }}:3306
         options: >-
-          --health-cmd "healthcheck.sh --connect --innodb_initialized"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 30
@@ -82,5 +75,26 @@ jobs:
           ACME_REAL_DB_PROVIDER: ${{ matrix.provider }}
           ACME_REAL_DB_ALLOW_MUTATION: "true"
           ACME_REAL_DB_CLIENT_MODULE: ./api/persistence/ci-real-db-clients.js
-          ACME_REAL_DB_URL: ${{ matrix.provider == 'postgresql' && 'postgresql://postgres:acme@127.0.0.1:5432/acme' || matrix.provider == 'mysql' && 'mysql://root:acme@127.0.0.1:3306/acme' || matrix.provider == 'mariadb' && 'mariadb://root:acme@127.0.0.1:3307/acme' || 'file:///tmp/acme-ci.sqlite' }}
+          ACME_REAL_DB_URL: ${{ matrix.url }}
+        run: npm run test:integration
+
+  real-sqlite:
+    name: Real sqlite migration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Run real engine integration
+        env:
+          ACME_ENV: production
+          ACME_REAL_DB_PROVIDER: sqlite
+          ACME_REAL_DB_ALLOW_MUTATION: "true"
+          ACME_REAL_DB_CLIENT_MODULE: ./api/persistence/ci-real-db-clients.js
+          ACME_REAL_DB_URL: file:///tmp/acme-ci.sqlite
         run: npm run test:integration
