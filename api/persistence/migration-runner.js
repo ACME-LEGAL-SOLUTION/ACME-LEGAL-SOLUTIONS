@@ -3,12 +3,15 @@
 const fs = require("node:fs");
 const { buildMigrationPlan, verifyMigrationSources, verifyAppliedMigrations } = require("./migration-engine");
 
-function createMigrationRunner({ manifest, rootDir, storage }) {
+function createMigrationRunner({ manifest, rootDir, storage, dialect } = {}) {
   if (!storage || typeof storage.readAppliedMigrations !== "function" || !storage.transaction || typeof storage.transaction.run !== "function") {
     throw new TypeError("Migration storage must expose readAppliedMigrations and transaction.run");
   }
   if (typeof storage.acquireLock !== "function" || typeof storage.releaseLock !== "function") {
     throw new TypeError("Migration storage must expose acquireLock and releaseLock");
+  }
+  if (!dialect || typeof dialect.bind !== "function") {
+    throw new TypeError("Migration SQL dialect is required");
   }
   const plan = buildMigrationPlan({ manifest, rootDir });
   verifyMigrationSources({ plan });
@@ -28,7 +31,11 @@ function createMigrationRunner({ manifest, rootDir, storage }) {
         await storage.transaction.run(async (tx) => {
           if (!tx || typeof tx.query !== "function") throw new Error("Transaction executor must expose query");
           await tx.query(sql);
-          await tx.query(`INSERT INTO ${migrationTable} (version, checksum, applied_at) VALUES (?, ?, CURRENT_TIMESTAMP)`, [migration.version, migration.checksum]);
+          const statement = dialect.bind(
+            `INSERT INTO ${migrationTable} (version, checksum, applied_at) VALUES (?, ?, CURRENT_TIMESTAMP)`,
+            [migration.version, migration.checksum]
+          );
+          await tx.query(statement.sql, statement.params);
         });
       }
       return { applied: pending.map((migration) => migration.version), pending: [] };
