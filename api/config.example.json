@@ -1,0 +1,11 @@
+{
+  "environment": "development",
+  "database": { "provider": "CONFIGURE", "url": "SERVER_SECRET" },
+  "objectStorage": { "provider": "CONFIGURE", "bucket": "CONFIGURE" },
+  "email": { "provider": "CONFIGURE" },
+  "whatsapp": { "provider": "CONFIGURE", "number": "CONFIGURE" },
+  "payments": { "provider": "CONFIGURE", "currencies": [] },
+  "ai": { "providerRouter": "CONFIGURE", "models": [] },
+  "auth": { "strategy": "CONFIGURE", "mfa": "PENDING" },
+  "backup": { "archiveRoot": "G:", "sync": "PENDING" }
+}
