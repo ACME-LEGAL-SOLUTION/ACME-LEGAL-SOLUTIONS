@@ -98,6 +98,6 @@ jobs:
           ACME_ENV: production
           ACME_REAL_DB_PROVIDER: sqlite
           ACME_REAL_DB_ALLOW_MUTATION: "true"
-          ACME_REAL_DB_CLIENT_MODULE: ./api/persistence/ci-real-db-clients.js
+          ACME_REAL_DB_CLIENT_MODULE: ./api/persistence/ci-real-db-clients-v2.js
           ACME_REAL_DB_URL: file:///tmp/acme-ci.sqlite
         run: npm run test:integration
