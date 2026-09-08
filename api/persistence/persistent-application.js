@@ -6,6 +6,7 @@ const { createTransactionalStorage } = require("./transactional-storage");
 const { createTransactionBoundary } = require("./transaction-contract");
 const { createTransactionalOperations } = require("./transactional-operations");
 const { createPersistentCrmOperations } = require("./persistent-crm-operations");
+const { createPersistentMatterOperations } = require("./persistent-matter-operations");
 const { createMatterAuthorization, createMatterScopedOperations } = require("../security/matter-authorization");
 
 /**
@@ -20,35 +21,18 @@ function createPersistentApplication({ executor, begin, commit, rollback, provid
     ? createSqlRepositories({ executor: tx }).repositories
     : repositories;
 
-  const operations = createTransactionalOperations({
-    transaction,
-    repositories,
-    repositoryFactory: scopedRepositoryFactory
-  });
-  const authorization = resolveMatterAccess
-    ? createMatterAuthorization({ resolveAccess: resolveMatterAccess })
-    : null;
+  const operations = createTransactionalOperations({ transaction, repositories, repositoryFactory: scopedRepositoryFactory });
+  const authorization = resolveMatterAccess ? createMatterAuthorization({ resolveAccess: resolveMatterAccess }) : null;
   const matterOperations = authorization
     ? createMatterScopedOperations({ authorization, transaction, repositoryFactory: scopedRepositoryFactory })
     : null;
-  const crmOperations = createPersistentCrmOperations({
-    transaction,
-    repositories,
-    repositoryFactory: scopedRepositoryFactory,
-    matterAuthorization: authorization,
-    clock
-  });
+  const crmOperations = createPersistentCrmOperations({ transaction, repositories, repositoryFactory: scopedRepositoryFactory, matterAuthorization: authorization, clock });
+  const matterDomainOperations = createPersistentMatterOperations({ transaction, repositories, repositoryFactory: scopedRepositoryFactory, matterAuthorization: authorization, clock });
   const application = createApplicationRuntime({ repositories, provider, clock });
 
   return Object.freeze({
-    application,
-    repositories,
-    storage,
-    transaction,
-    operations,
-    crmOperations,
-    authorization,
-    matterOperations
+    application, repositories, storage, transaction, operations, crmOperations,
+    matterDomainOperations, authorization, matterOperations
   });
 }
 
