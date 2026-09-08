@@ -1,0 +1,1 @@
+Do not claim production deployment until GoDaddy validation is complete.
