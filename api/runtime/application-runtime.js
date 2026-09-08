@@ -10,16 +10,31 @@ const { createBillingService } = require("./billing-service");
 const { createNetworkService } = require("./network-service");
 const { createCrmService } = require("./crm-service");
 const { createIntakeService } = require("./intake-service");
+const { createPartyService } = require("./party-service");
+const { createRelationshipService } = require("./relationship-service");
+const { createConflictService } = require("./conflict-service");
+const { createDocumentService } = require("./document-service");
+const { createEvidenceService } = require("./evidence-service");
 
 function createApplicationRuntime({ repositories, provider, clock = () => new Date(), conflictCheck = null } = {}) {
   if (!repositories) throw new Error("Application repositories are required");
   const runtime = createRuntime({ repositories, audit: repositories.auditService, clock });
   const crm = createCrmService({ repositories, clock });
+  const party = createPartyService({ repositories, clock });
+  const relationship = createRelationshipService({ repositories, clock });
+  const conflict = createConflictService({ repositories, clock });
+  const document = createDocumentService({ repositories, clock });
+  const evidence = createEvidenceService({ repositories, clock });
   const intake = createIntakeService({ repositories, clock, conflictCheck });
   return Object.freeze({
     runtime,
     crm,
     intake,
+    party,
+    relationship,
+    conflict,
+    document,
+    evidence,
     ai: createAIGateway({ repositories, provider, clock }),
     source: createSourceService({ repository: repositories.sources, clock }),
     legalVersions: createLegalVersionService({ repository: repositories.legalVersions, clock }),
