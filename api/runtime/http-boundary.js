@@ -1,18 +1,23 @@
 "use strict";
 
 const ROUTES = Object.freeze({
-  "/api/clients": "clients",
-  "/api/matters": "matters",
-  "/api/parties": "parties",
+  "/api/clients": "crm",
+  "/api/matters": "crm",
+  "/api/parties": "party",
+  "/api/relationships": "relationship",
+  "/api/conflicts": "conflict",
+  "/api/documents": "document",
+  "/api/evidence": "evidence",
   "/api/authorities": "authorities",
   "/api/hearings": "diary",
   "/api/diary": "diary",
-  "/api/documents": "documents",
-  "/api/evidence": "evidence",
   "/api/sources": "source",
   "/api/legal-versions": "legalVersions",
   "/api/ai": "ai",
-  "/api/reviews": "reviews",
+  "/api/ai/intake": "intake",
+  "/api/ai/research": "ai",
+  "/api/ai/review": "ai",
+  "/api/reviews": "ai",
   "/api/partners": "network",
   "/api/billing": "billing"
 });
