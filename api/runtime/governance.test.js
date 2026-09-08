@@ -43,7 +43,8 @@ test("final action cannot proceed without human approval", async () => {
   const { reviews } = setup();
   const actor = { id: "reviewer-3" };
   const review = await reviews.create({ matterId: "matter-3", proposedAction: "resolve", output: "AI result", actor });
-  await assert.rejects(() => reviews.authorizeFinalAction(review, "resolve", actor), /approved or modified/);
+  const unauthorizedActor = { id: "different-reviewer" };
+  await assert.rejects(() => reviews.authorizeFinalAction(review, "resolve", unauthorizedActor), /reviewing human actor/);
   const approved = await reviews.decide(review, "approved", actor);
   const authorization = await reviews.authorizeFinalAction(approved, "resolve", actor);
   assert.equal(authorization.authorized, true);
