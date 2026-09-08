@@ -28,17 +28,10 @@ function createApplicationRuntime({ repositories, provider, clock = () => new Da
   const evidence = createEvidenceService({ repositories, clock });
   const intake = createIntakeService({ repositories, clock, conflictCheck });
   const consultation = createConsultationService({ intake, clock });
+  const ai = createAIGateway({ repositories, provider, clock });
   return Object.freeze({
-    runtime,
-    crm,
-    intake,
-    consultation,
-    party,
-    relationship,
-    conflict,
-    document,
-    evidence,
-    ai: createAIGateway({ repositories, provider, clock }),
+    runtime, crm, intake, consultation, party, relationship, conflict, document, evidence, ai,
+    reviews: ai.governance.reviews,
     source: createSourceService({ repository: repositories.sources, clock }),
     legalVersions: createLegalVersionService({ repository: repositories.legalVersions, clock }),
     authorities: createAuthorityService({ repository: repositories.authorities, clock }),
