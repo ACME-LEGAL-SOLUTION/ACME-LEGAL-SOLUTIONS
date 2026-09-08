@@ -1,0 +1,1 @@
+Next engineering task: Phase 2D persistent CRM domain operations and authenticated HTTP integration.
