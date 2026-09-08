@@ -2,7 +2,7 @@
 
 const http = require("node:http");
 const { URL } = require("node:url");
-const { createApplicationRepositories } = require("./repository-factory");
+const { createStorageProvider } = require("./storage-provider");
 const { createApplicationRuntime } = require("./application-runtime");
 const { createHttpBoundary } = require("./http-boundary");
 
@@ -47,11 +47,10 @@ async function invoke(service, operation, input, actor) {
   if (READ_OPERATIONS.has(operation)) return service[operation](input.id || input.recordId, actor);
   if (operation === "submit") return service.submit(input, actor);
   if (operation === "execute") return service.execute({ ...input, actor });
-  if (operation === "register") return service.register({ ...input, actor });
+  if (operation === "register" || operation === "create") return service[operation]({ ...input, actor });
   if (operation === "verify") return service.verify(input.record || input, actor, input.verificationState);
   if (operation === "registerPartner") return service.registerPartner({ ...input, actor });
   if (operation === "verifyPartner") return service.verifyPartner(input.partner || input, actor, input.verificationState, input.evidence || []);
-  if (operation === "create") return service.create({ ...input, actor });
   if (operation === "schedule") return service.schedule({ ...input, actor });
   if (["createClient", "createMatter", "createParty", "createRelationship", "checkMatter", "createDocument", "createEvidence"].includes(operation)) return service[operation](input, actor);
   if (operation === "createInvoice") return service.createInvoice({ ...input, actor });
@@ -63,19 +62,20 @@ async function invoke(service, operation, input, actor) {
   throw Object.assign(new Error(`Unsupported service operation: ${operation}`), { statusCode: 501 });
 }
 
-function createHttpServer({ application, authenticate = async () => null, publicActor = PUBLIC_ACTOR } = {}) {
-  const runtime = application || createApplicationRuntime({ repositories: createApplicationRepositories(), provider: { execute: async () => ({ answer: "draft" }) } });
+function createHttpServer({ application, repositories, authenticate = async () => null, publicActor = PUBLIC_ACTOR } = {}) {
+  const storage = createStorageProvider({ repositories });
+  const runtime = application || createApplicationRuntime({ repositories: storage.repositories, provider: { execute: async () => ({ answer: "draft" }) } });
   const boundary = createHttpBoundary({ application: runtime, authenticate, publicActor });
   return http.createServer(async (request, response) => {
     try {
       if (request.method === "OPTIONS") { response.writeHead(204, { "access-control-allow-methods": "POST,GET,OPTIONS", "access-control-allow-headers": "content-type,authorization" }); return response.end(); }
       const url = new URL(request.url, "http://localhost");
-      if (url.pathname === "/health") return json(response, 200, { status: "ok" });
+      if (url.pathname === "/health") return json(response, 200, { status: "ok", persistence: "provider-boundary" });
       if (!Object.prototype.hasOwnProperty.call(boundary.routes, url.pathname)) return json(response, 404, { error: "Not found" });
       const input = request.method === "GET" ? Object.fromEntries(url.searchParams.entries()) : await (String(request.headers["content-type"] || "").toLowerCase().includes("application/json") ? readJsonBody(request) : Promise.reject(Object.assign(new Error("Content-Type must be application/json"), { statusCode: 415 })));
       const resolved = await boundary.resolve(url.pathname, request); const operation = operationFor(url.pathname, request.method, input);
       return json(response, 200, await invoke(resolved.service, operation, input, resolved.actor));
-    } catch (error) { const status = Number.isInteger(error.statusCode) ? error.statusCode : /required|Invalid|incomplete/i.test(error.message || "") ? 400 : 500; return json(response, status, { error: error.message || "Internal server error" }); }
+    } catch (error) { const status = Number.isInteger(error.statusCode) ? error.statusCode : error.code === "MATTER_ACCESS_DENIED" ? 403 : /required|Invalid|incomplete/i.test(error.message || "") ? 400 : 500; return json(response, status, { error: error.message || "Internal server error" }); }
   });
 }
 
