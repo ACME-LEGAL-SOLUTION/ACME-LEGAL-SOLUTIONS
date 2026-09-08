@@ -5,7 +5,7 @@ const test = require("node:test");
 const http = require("node:http");
 const { createApplicationRepositories } = require("./repository-factory");
 const { createApplicationRuntime } = require("./application-runtime");
-const { createHttpServer, operationFor } = require("./http-server");
+const { createHttpServer, operationFor, resolveHttpApplication } = require("./http-server");
 
 function request(server, { method = "GET", path = "/health", body, contentType = "application/json" } = {}) {
   return new Promise((resolve, reject) => {
@@ -39,6 +39,23 @@ test("HTTP server dispatches authenticated CRM and party operations", async (t) 
   assert.equal(party.status, 200); assert.ok(party.body.id);
   const found = await request(server, { method: "GET", path: `/api/clients?id=${encodeURIComponent(client.body.id)}` });
   assert.equal(found.status, 200); assert.equal(found.body.id, client.body.id);
+});
+
+test("HTTP server routes persistent CRM writes through the transaction boundary", async () => {
+  const calls = [];
+  const persistent = {
+    application: { crm: { getClient: async () => ({ id: "read-only" }) } },
+    crmOperations: {
+      createClient: async ({ client, actor }) => { calls.push(["client", client, actor]); return { id: "persistent-client" }; },
+      createMatter: async ({ matter, actor }) => { calls.push(["matter", matter, actor]); return { id: "persistent-matter", clientId: matter.clientId }; }
+    }
+  };
+  const runtime = resolveHttpApplication(persistent);
+  const actor = { id: "professional-2", roles: ["professional"] };
+  assert.equal((await runtime.crm.createClient({ name: "Persistent Client" }, actor)).id, "persistent-client");
+  assert.equal((await runtime.crm.createMatter({ clientId: "persistent-client", title: "Persistent Matter" }, actor)).id, "persistent-matter");
+  assert.deepEqual(calls.map(([kind]) => kind), ["client", "matter"]);
+  assert.equal(calls[0][2], actor);
 });
 
 test("HTTP server enforces authentication on non-public routes", async (t) => {
