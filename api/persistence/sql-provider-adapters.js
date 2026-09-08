@@ -1,7 +1,6 @@
 "use strict";
 
 const { SUPPORTED_PROVIDERS } = require("./driver-contract");
-const { createProviderDriver } = require("./provider-driver");
 const { createSqlDialect } = require("./sql-dialect");
 const { createTransactionBoundary } = require("./transaction-contract");
 
@@ -23,6 +22,12 @@ function safeIdentifier(value) {
   return value;
 }
 
+async function releaseConnection(connection) {
+  if (!connection) return;
+  if (typeof connection.release === "function") return connection.release();
+  if (typeof connection.close === "function") return connection.close();
+}
+
 function createSqlProviderAdapter({ provider, config, client, migrationLockKey = "acme_migration_lock", sqliteLock } = {}) {
   if (!SUPPORTED_PROVIDERS.includes(provider)) throw new Error(`Unsupported production database provider: ${provider}`);
   if (!config || config.environment !== "production" || config.provider !== provider) throw new Error("Provider adapter requires matching production configuration");
@@ -33,7 +38,7 @@ function createSqlProviderAdapter({ provider, config, client, migrationLockKey =
 
   const dialect = DIALECTS[provider];
   const sqlDialect = createSqlDialect({ provider, placeholder: dialect.placeholder });
-  let lockHeld = false;
+  let lockConnection = null;
 
   const query = (sql, params = []) => {
     const bound = sqlDialect.bind(sql, params);
@@ -46,8 +51,14 @@ function createSqlProviderAdapter({ provider, config, client, migrationLockKey =
     await connection.query("BEGIN");
     return connection;
   };
-  const commit = async (connection) => { await connection.query("COMMIT"); };
-  const rollback = async (connection) => { await connection.query("ROLLBACK"); };
+  const commit = async (connection) => {
+    try { await connection.query("COMMIT"); }
+    finally { await releaseConnection(connection); }
+  };
+  const rollback = async (connection) => {
+    try { await connection.query("ROLLBACK"); }
+    finally { await releaseConnection(connection); }
+  };
 
   const ensureMigrationLedger = async ({ migrationTable = "acme_migrations" } = {}) => {
     const table = safeIdentifier(migrationTable);
@@ -68,24 +79,38 @@ function createSqlProviderAdapter({ provider, config, client, migrationLockKey =
   };
 
   const acquireLock = async () => {
-    if (lockHeld) throw new Error("Migration lock already held");
+    if (lockConnection || provider === "sqlite" && sqliteLock.held) throw new Error("Migration lock already held");
     if (provider === "sqlite") {
       await sqliteLock.acquire(migrationLockKey);
-    } else {
-      const result = await query(dialect.lock, [migrationLockKey]);
+      return;
+    }
+    lockConnection = await client.connect();
+    try {
+      if (!lockConnection || typeof lockConnection.query !== "function") throw new TypeError("Migration lock connection must expose query");
+      const bound = sqlDialect.bind(dialect.lock, [migrationLockKey]);
+      const result = await lockConnection.query(bound.sql, bound.params);
       const value = result && result.rows && result.rows[0] && Object.values(result.rows[0])[0];
       if (value === false || value === 0 || value === null) throw new Error(`Unable to acquire ${provider} migration lock`);
+    } catch (error) {
+      await releaseConnection(lockConnection);
+      lockConnection = null;
+      throw error;
     }
-    lockHeld = true;
   };
 
   const releaseLock = async () => {
-    if (!lockHeld) return;
+    if (provider === "sqlite") {
+      if (sqliteLock.held) await sqliteLock.release(migrationLockKey);
+      return;
+    }
+    if (!lockConnection) return;
+    const connection = lockConnection;
+    lockConnection = null;
     try {
-      if (provider === "sqlite") await sqliteLock.release(migrationLockKey);
-      else await query(dialect.unlock, [migrationLockKey]);
+      const bound = sqlDialect.bind(dialect.unlock, [migrationLockKey]);
+      await connection.query(bound.sql, bound.params);
     } finally {
-      lockHeld = false;
+      await releaseConnection(connection);
     }
   };
 
@@ -113,11 +138,4 @@ function createMysqlAdapter(options = {}) { return createSqlProviderAdapter({ ..
 function createMariadbAdapter(options = {}) { return createSqlProviderAdapter({ ...options, provider: "mariadb" }); }
 function createSqliteAdapter(options = {}) { return createSqlProviderAdapter({ ...options, provider: "sqlite" }); }
 
-module.exports = {
-  DIALECTS,
-  createSqlProviderAdapter,
-  createPostgresqlAdapter,
-  createMysqlAdapter,
-  createMariadbAdapter,
-  createSqliteAdapter
-};
+module.exports = { DIALECTS, createSqlProviderAdapter, createPostgresqlAdapter, createMysqlAdapter, createMariadbAdapter, createSqliteAdapter };
