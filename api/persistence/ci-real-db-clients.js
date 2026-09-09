@@ -29,7 +29,17 @@ function mysqlClient({ config }) {
 
 function mariadbClient({ config }) {
   const mariadb = require("mariadb");
-  const pool = mariadb.createPool({ uri: config.connectionUrl, ssl: config.sslRequired ? { rejectUnauthorized: false } : undefined, connectionLimit: 5, multipleStatements: true });
+  const url = new URL(config.connectionUrl);
+  const pool = mariadb.createPool({
+    host: url.hostname,
+    port: url.port ? Number(url.port) : 3306,
+    user: decodeURIComponent(url.username),
+    password: decodeURIComponent(url.password),
+    database: url.pathname.replace(/^\//, ""),
+    ssl: config.sslRequired ? { rejectUnauthorized: false } : undefined,
+    connectionLimit: 5,
+    multipleStatements: true
+  });
   return {
     connect: () => pool.getConnection(),
     close: () => pool.end(),
