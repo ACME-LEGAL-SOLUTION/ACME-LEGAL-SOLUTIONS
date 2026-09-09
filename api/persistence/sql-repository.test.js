@@ -11,8 +11,8 @@ function fakeQuery() {
     async query(sql, params = []) {
       calls.push({ sql, params });
       if (/^SELECT \* FROM clients WHERE id/.test(sql)) return { rows: [{ id: "c1", client_type: "organization", status: "active", created_at: "2026-01-01", updated_at: "2026-01-01" }] };
-      if (/^SELECT \* FROM audit_events/.test(sql)) return { rows: [{ id: "a1", actor_id: "u1", actor_type: "human", event_type: "matter.created", payload_json: '{"ok":true}', created_at: "2026-01-01" }] };
       if (/^UPDATE/.test(sql)) return { affectedRows: 1 };
+      if (/^SELECT \* FROM audit_events/.test(sql)) return { rows: [{ id: "a1", actor_id: "u1", actor_type: "human", event_type: "matter.created", payload_json: '{"ok":true}', created_at: "2026-01-01" }] };
       return { rows: [] };
     }
   };
@@ -56,7 +56,7 @@ test("SQL repositories expose all persistence collections and matter transition"
   assert.equal(typeof repositories.matters.transition, "function");
   assert.equal(typeof repositories.auditService.append, "function");
   await repositories.matters.transition("m1", "active", { id: "u1" });
-  assert.match(fake.calls.at(-1).sql, /^UPDATE matters SET status = \?, updated_at = \? WHERE id = \?$/);
+  assert.match(fake.calls.at(-2).sql, /^UPDATE matters SET status = \?, updated_at = \? WHERE id = \?$/);
 });
 
 test("SQL repository rejects unsupported collection names", () => {
