@@ -11,10 +11,8 @@
     "start": "node api/runtime/http-server.js",
     "smoke": "node api/runtime/server-smoke.js"
   },
-  "engines": {
-    "node": ">=20"
-  },
-  "devDependencies": {
+  "engines": { "node": ">=20" },
+  "dependencies": {
     "mariadb": "^3.4.5",
     "mysql2": "^3.14.3",
     "pg": "^8.16.3",
