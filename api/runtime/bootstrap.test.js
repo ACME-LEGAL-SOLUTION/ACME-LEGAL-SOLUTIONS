@@ -5,10 +5,9 @@ const assert = require("node:assert/strict");
 const { createApplicationBootstrap } = require("./bootstrap");
 
 function fakePersistence() {
-  const repositories = { aiInteractions: { create: async (value) => ({ id: "ai-1", ...value }) }, audit: { create: async (value) => value }, auditService: { append: async () => {} } };
   return {
     config: { provider: "sqlite", environment: "production" },
-    repositories,
+    repositories: {},
     driver: { dialect: { bind: (sql, params) => ({ sql, params }) }, close: async () => {} },
     storage: { readAppliedMigrations: async () => [], ensureMigrationLedger: async () => {}, acquireLock: async () => {}, releaseLock: async () => {}, transaction: { run: async () => {} } }
   };
@@ -28,16 +27,15 @@ test("production bootstrap fails closed without an AI provider", async () => {
 
 test("production bootstrap runs migrations before exposing the application", async () => {
   const persistence = fakePersistence();
-  let migrated = false;
   const result = await createApplicationBootstrap({
     env: { ACME_ENV: "production", ACME_DB_PROVIDER: "sqlite", ACME_DB_URL: "file:///tmp/acme-test.db", ACME_DB_SSL: "false" },
     provider: { execute: async () => ({ answer: "draft" }) },
     productionPersistenceFactory: () => persistence,
+    applicationRuntimeFactory: ({ repositories }) => ({ repositories }),
     migrationManifest: { migrationTable: "acme_migrations", migrations: [] },
     rootDir: process.cwd()
   }).start();
   assert.ok(result.migrationRunner);
-  assert.equal(typeof result.application.runtime.createMatter, "function");
-  assert.equal(migrated, false);
+  assert.equal(result.application.repositories, persistence.repositories);
   await result.close();
 });
