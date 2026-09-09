@@ -6,7 +6,7 @@ const { createSqlDialect } = require("./sql-dialect");
 const { createTransactionBoundary } = require("./transaction-contract");
 
 const DIALECTS = Object.freeze({
-  postgresql: Object.freeze({ placeholder: (i) => `$${i}`, lock: "SELECT pg_advisory_lock(?)", unlock: "SELECT pg_advisory_unlock(?)" }),
+  postgresql: Object.freeze({ placeholder: (i) => `$${i}`, lock: "SELECT pg_advisory_lock(hashtextextended(?, 0))", unlock: "SELECT pg_advisory_unlock(hashtextextended(?, 0))" }),
   mysql: Object.freeze({ placeholder: () => "?", lock: "SELECT GET_LOCK(?, 30)", unlock: "SELECT RELEASE_LOCK(?)" }),
   mariadb: Object.freeze({ placeholder: () => "?", lock: "SELECT GET_LOCK(?, 30)", unlock: "SELECT RELEASE_LOCK(?)" }),
   sqlite: Object.freeze({ placeholder: () => "?", lock: null, unlock: null })
