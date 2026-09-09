@@ -80,11 +80,11 @@ jobs:
       - name: Run real engine integration
         env:
           ACME_ENV: production
-          ACME_DB_SSL: "false"
           ACME_REAL_DB_PROVIDER: ${{ matrix.provider }}
           ACME_REAL_DB_ALLOW_MUTATION: "true"
           ACME_REAL_DB_CLIENT_MODULE: ./api/persistence/ci-real-db-clients.js
           ACME_REAL_DB_URL: ${{ matrix.url }}
+          ACME_REAL_DB_SSL: "false"
         run: npm run test:integration
 
   real-sqlite:
@@ -102,9 +102,9 @@ jobs:
       - name: Run real engine integration
         env:
           ACME_ENV: production
-          ACME_DB_SSL: "false"
           ACME_REAL_DB_PROVIDER: sqlite
           ACME_REAL_DB_ALLOW_MUTATION: "true"
           ACME_REAL_DB_CLIENT_MODULE: ./api/persistence/ci-real-db-clients.js
           ACME_REAL_DB_URL: file:///tmp/acme-ci.sqlite
+          ACME_REAL_DB_SSL: "false"
         run: npm run test:integration
