@@ -40,8 +40,7 @@ test("SQL repository serializes and deserializes structured audit payloads", asy
   const fake = fakeQuery();
   const repository = createSqlRepository({ name: "audit", query: (sql, params) => fake.query(sql, params) });
   await repository.create({ id: "a1", actorId: "u1", actorType: "human", eventType: "matter.created", payload: { ok: true }, createdAt: "2026-01-01" });
-  assert.equal(fake.calls[0].params[4], undefined);
-  assert.equal(fake.calls[0].params[5], '{"ok":true}');
+  assert.equal(fake.calls[0].params[4], '{"ok":true}');
   assert.deepEqual(await repository.getById("a1"), { id: "a1", actorId: "u1", actorType: "human", eventType: "matter.created", payload: { ok: true }, createdAt: "2026-01-01" });
 });
 
