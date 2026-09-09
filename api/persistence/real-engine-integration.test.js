@@ -21,7 +21,7 @@ function requiredRealIntegrationConfig() {
 if (!requiredRealIntegrationConfig()) {
   test("real database integration harness is opt-in", { skip: true }, () => {});
 } else {
-  test(`real ${provider} engine executes the ACME migration contract`, async () => {
+  test(`real ${provider} engine executes the ACME migration contract`, { timeout: 30000 }, async () => {
     const clientModulePath = path.isAbsolute(clientModule)
       ? clientModule
       : path.resolve(rootDir, clientModule);
@@ -49,7 +49,6 @@ if (!requiredRealIntegrationConfig()) {
     const runner = createMigrationRunner({ manifest, rootDir, storage: adapter, dialect: adapter.dialect });
 
     try {
-      await adapter.connect();
       const first = await runner.migrate();
       const second = await runner.migrate();
       assert.deepEqual(first, { applied: ["001_initial_relational_schema"], pending: [] });
