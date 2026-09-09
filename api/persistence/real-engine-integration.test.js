@@ -22,7 +22,10 @@ if (!requiredRealIntegrationConfig()) {
   test("real database integration harness is opt-in", { skip: true }, () => {});
 } else {
   test(`real ${provider} engine executes the ACME migration contract`, async () => {
-    const clients = require(clientModule);
+    const clientModulePath = path.isAbsolute(clientModule)
+      ? clientModule
+      : path.resolve(rootDir, clientModule);
+    const clients = require(clientModulePath);
     const factory = clients.createClient || clients.default || clients;
     assert.equal(typeof factory, "function", "ACME_REAL_DB_CLIENT_MODULE must export a client factory");
 
