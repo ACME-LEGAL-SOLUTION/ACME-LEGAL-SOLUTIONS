@@ -1,8 +1,24 @@
 "use strict";
 
 const { createGovernance } = require("./governance");
+const { FINAL_ACTIONS } = require("./review-service");
 
 const DECISION_STATES = Object.freeze(["proposed", "review_required", "approved", "rejected"]);
+
+function toolName(tool) {
+  if (typeof tool === "string") return tool;
+  if (!tool || typeof tool !== "object") return null;
+  return tool.name || tool.action || tool.id || null;
+}
+
+function assertNoFinalActionTools(tools) {
+  for (const tool of tools) {
+    const name = toolName(tool);
+    if (name && FINAL_ACTIONS.has(name)) {
+      throw new Error(`AI cannot invoke final human action tool: ${name}`);
+    }
+  }
+}
 
 function createAIGateway({ repositories = {}, provider, clock = () => new Date() } = {}) {
   if (!provider?.execute) throw new Error("AI provider adapter is not configured");
@@ -14,6 +30,8 @@ function createAIGateway({ repositories = {}, provider, clock = () => new Date()
     if (!matterId) throw new Error("Matter scope is required");
     if (!actor?.id) throw new Error("Authenticated actor is required");
     if (!task) throw new Error("AI task is required");
+    if (!Array.isArray(tools)) throw new TypeError("AI tools must be an array");
+    assertNoFinalActionTools(tools);
 
     const result = await provider.execute({ matterId, actor, task, context, tools });
     const interaction = await repositories.aiInteractions.create({
@@ -41,4 +59,4 @@ function createAIGateway({ repositories = {}, provider, clock = () => new Date()
   return Object.freeze({ execute, governance, DECISION_STATES });
 }
 
-module.exports = { DECISION_STATES, createAIGateway };
+module.exports = { DECISION_STATES, createAIGateway, assertNoFinalActionTools };
