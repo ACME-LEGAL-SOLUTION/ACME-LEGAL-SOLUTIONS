@@ -17,7 +17,11 @@ function createCollection() {
       return clone(record);
     },
     async getById(id) { return clone(records.get(id) || null); },
-    async list() { return [...records.values()].map(clone); },
+    async list(filters = {}) {
+      return [...records.values()]
+        .filter((record) => Object.entries(filters).every(([key, value]) => record[key] === value))
+        .map(clone);
+    },
     async update(id, patch) {
       const current = records.get(id);
       if (!current) throw new Error(`Record not found: ${id}`);
