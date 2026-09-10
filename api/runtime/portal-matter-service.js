@@ -59,8 +59,8 @@ function createPortalMatterService({ crm, document, evidence, diary, repositorie
       issue: next.issue || null,
       jurisdiction: next.jurisdiction || null,
       applicableDate: next.applicableDate || null,
-      payload: stripGovernanceFields(next),
-      provenance: next.provenance || [],
+      payloadJson: stripGovernanceFields(next),
+      provenanceJson: next.provenance || [],
       confidence: next.confidence ?? null,
       updatedAt: clock().toISOString(),
       approvedBy: next.state === "approved" ? actor.id : current.approvedBy || null,
@@ -107,8 +107,8 @@ function toPersistentWorkPackage(workPackage, actor, clock) {
     issue: workPackage.issue || null,
     jurisdiction: workPackage.jurisdiction || null,
     applicableDate: workPackage.applicableDate || null,
-    payload: stripGovernanceFields(workPackage),
-    provenance: workPackage.provenance || [],
+    payloadJson: stripGovernanceFields(workPackage),
+    provenanceJson: workPackage.provenance || [],
     confidence: workPackage.confidence ?? null,
     createdAt: workPackage.createdAt || clock().toISOString(),
     updatedAt: clock().toISOString(),
@@ -126,7 +126,7 @@ function stripGovernanceFields(workPackage) {
 function fromPersistentWorkPackage(record) {
   if (!record) return null;
   return {
-    ...(record.payload || {}),
+    ...(record.payloadJson || {}),
     id: record.id,
     matterId: record.matterId,
     state: record.state,
@@ -134,7 +134,7 @@ function fromPersistentWorkPackage(record) {
     jurisdiction: record.jurisdiction,
     applicableDate: record.applicableDate,
     confidence: record.confidence,
-    provenance: record.provenance || [],
+    provenance: record.provenanceJson || [],
     createdAt: record.createdAt,
     updatedAt: record.updatedAt
   };
