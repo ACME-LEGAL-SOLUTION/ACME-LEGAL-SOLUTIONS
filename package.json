@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "description": "ACME Legal Solution application foundation",
   "scripts": {
-    "test": "node --test api/runtime/*.test.js api/persistence/*.test.js",
+    "test": "node --test api/runtime/*.test.js api/persistence/*.test.js api/security/*.test.js",
     "test:persistence": "node --test api/persistence/*.test.js",
     "test:integration": "node --test api/persistence/real-engine-integration.test.js",
     "test:security": "node --test api/security/*.test.js",
