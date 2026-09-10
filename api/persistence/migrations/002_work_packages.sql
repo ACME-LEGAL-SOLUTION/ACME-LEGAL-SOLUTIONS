@@ -1,0 +1,3 @@
+-- Migration 002: governed portal work packages.
+-- Execution source is the canonical schema at api/persistence/schema/002_work_packages.sql.
+-- The migration runner applies that schema atomically and records its checksum.
