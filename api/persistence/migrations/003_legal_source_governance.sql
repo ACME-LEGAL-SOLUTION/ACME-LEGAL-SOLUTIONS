@@ -1,0 +1,1 @@
+-- Migration marker. Canonical SQL lives in schema/003_legal_source_governance.sql.
