@@ -2,6 +2,7 @@
 
 const { createGovernance } = require("./governance");
 const { FINAL_ACTIONS } = require("./review-service");
+const { createAIProviderContract } = require("./ai-provider-contract");
 
 const DECISION_STATES = Object.freeze(["proposed", "review_required", "approved", "rejected"]);
 
@@ -20,9 +21,11 @@ function assertNoFinalActionTools(tools) {
   }
 }
 
-function createAIGateway({ repositories = {}, provider, clock = () => new Date() } = {}) {
+function createAIGateway({ repositories = {}, provider, specialistAgent = null, clock = () => new Date() } = {}) {
   if (!provider?.execute) throw new Error("AI provider adapter is not configured");
   if (!repositories.aiInteractions) throw new Error("AI interaction repository is required");
+  const providerAdapter = createAIProviderContract(provider);
+  if (specialistAgent && typeof specialistAgent.execute !== "function") throw new TypeError("Specialist agent is incomplete");
 
   const governance = createGovernance({ repositories, clock });
 
@@ -33,7 +36,9 @@ function createAIGateway({ repositories = {}, provider, clock = () => new Date()
     if (!Array.isArray(tools)) throw new TypeError("AI tools must be an array");
     assertNoFinalActionTools(tools);
 
-    const result = await provider.execute({ matterId, actor, task, context, tools });
+    const result = specialistAgent
+      ? await specialistAgent.execute({ matterId, actor, task, context, tools })
+      : await providerAdapter.execute({ matterId, actor, task, context, tools });
     const interaction = await repositories.aiInteractions.create({
       matterId,
       actorId: actor.id,
@@ -56,7 +61,7 @@ function createAIGateway({ repositories = {}, provider, clock = () => new Date()
     return { interaction, review, decisionState: "review_required" };
   }
 
-  return Object.freeze({ execute, governance, DECISION_STATES });
+  return Object.freeze({ execute, governance, DECISION_STATES, providerId: providerAdapter.id });
 }
 
 module.exports = { DECISION_STATES, createAIGateway, assertNoFinalActionTools };
