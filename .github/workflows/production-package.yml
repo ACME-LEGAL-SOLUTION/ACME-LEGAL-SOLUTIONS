@@ -25,3 +25,15 @@ jobs:
       - name: Verify no obvious secret files in image
         run: |
           ! docker run --rm --entrypoint /bin/sh acme-legal-solutions:${{ github.sha }} -c 'find /app -type f \( -name "*.pem" -o -name "*.key" -o -name ".env" -o -name ".env.*" \) -print -quit | grep -q .'
+      - name: Run container smoke test
+        run: |
+          docker run -d --name acme-smoke -p 3000:3000 -e ACME_ENV=development acme-legal-solutions:${{ github.sha }}
+          trap 'docker rm -f acme-smoke >/dev/null 2>&1 || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:3000/health >/tmp/health.json; then break; fi
+            sleep 2
+            if [ "$attempt" = "30" ]; then docker logs acme-smoke; exit 1; fi
+          done
+          test "$(cat /tmp/health.json)" = '{"status":"ok","persistence":"provider-boundary"}'
+          curl --fail --silent http://127.0.0.1:3000/ready >/tmp/ready.json
+          test "$(node -e 'const fs=require("fs"); const p=JSON.parse(fs.readFileSync("/tmp/ready.json")); process.stdout.write(p.status)')" = "ready"
