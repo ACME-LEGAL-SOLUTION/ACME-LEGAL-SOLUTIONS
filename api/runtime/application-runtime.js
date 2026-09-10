@@ -22,15 +22,15 @@ const { createEvidenceService } = require("./evidence-service");
 const { createPortalService } = require("./portal-service");
 const { createPortalMatterService } = require("./portal-matter-service");
 
-function createApplicationRuntime({ repositories, provider, clock = () => new Date(), conflictCheck = null, transaction = null, repositoryFactory = null, matterAuthorization = null } = {}) {
+function createApplicationRuntime({ repositories, provider, clock = () => new Date(), conflictCheck = null, transaction = null, repositoryFactory = null, matterAuthorization = null, objectStorage = null } = {}) {
   if (!repositories) throw new Error("Application repositories are required");
   const runtime = createRuntime({ repositories, audit: repositories.auditService, clock });
   const crm = createCrmService({ repositories, clock });
   const party = createPartyService({ repositories, clock });
   const relationship = createRelationshipService({ repositories, clock });
   const conflict = createConflictService({ repositories, clock });
-  const document = createDocumentService({ repositories, clock });
-  const evidence = createEvidenceService({ repositories, clock });
+  const document = createDocumentService({ repositories, clock, objectStorage, matterAuthorization });
+  const evidence = createEvidenceService({ repositories, clock, matterAuthorization });
   const intake = createIntakeService({ repositories, clock, conflictCheck });
   const consultation = createConsultationService({ intake, clock });
   const source = createSourceService({ repository: repositories.sources, clock });
@@ -45,12 +45,7 @@ function createApplicationRuntime({ repositories, provider, clock = () => new Da
   const network = createNetworkService({ repository: repositories.partners, audit: repositories.auditService, clock });
   const portal = createPortalService({ crm, document, evidence, diary, billing, repositories });
   const portalMatter = createPortalMatterService({ crm, document, evidence, diary, repositories, clock, transaction, repositoryFactory, matterAuthorization });
-  return Object.freeze({
-    runtime, crm, intake, consultation, party, relationship, conflict, document, evidence, ai, specialists, specialistRouter, knowledge,
-    reviews: ai.governance.reviews,
-    source, legalVersions, authorities,
-    diary, billing, network, portal, portalMatter
-  });
+  return Object.freeze({ runtime, crm, intake, consultation, party, relationship, conflict, document, evidence, ai, specialists, specialistRouter, knowledge, reviews: ai.governance.reviews, source, legalVersions, authorities, diary, billing, network, portal, portalMatter, objectStorage });
 }
 
 module.exports = { createApplicationRuntime };
