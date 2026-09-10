@@ -8,15 +8,16 @@ The canonical authorization implementation is `matter-authorization.js`. `runtim
 
 ## Production identity
 
-ACME does not fabricate an identity provider. Production startup now fails closed unless an authenticated identity adapter is supplied directly or configured with `ACME_AUTH_MODULE`.
+ACME does not fabricate an identity provider. Production startup fails closed unless an authenticated identity adapter is supplied directly or configured with `ACME_AUTH_MODULE`. The configured adapter remains responsible for OIDC/JWT/session verification, key management, revocation and upstream identity policy.
 
-The configured adapter must export `authenticate(request)` and return a normalized identity containing:
+## Production AI
 
-- `id`
-- `role`: `client`, `professional`, `admin`, `lawyer`, or `accountant`
-- `human`: boolean
-- optional `type`, `subject`, `clientId`, and `scopes`
+Production startup requires a real AI provider adapter through `ACME_AI_PROVIDER_MODULE` unless one is explicitly injected by the deployment composition. The production AI boundary requires a provider id, preserves matter scope and authenticated actor identity, limits task/context size, enforces provider-defined model and tool allow-lists, generates a request id, and applies a provider timeout. AI cannot invoke final human-action tools; consequential decisions remain subject to human review.
 
-The application validates the adapter output before exposing it to protected application services. The adapter remains responsible for the actual OIDC/JWT/session verification, key management, token/session revocation, and upstream identity-provider policy.
+The external AI provider remains responsible for its credentials, transport security, provider-side retention controls and model-level safety controls. ACME must not commit provider credentials or client data.
 
-No credentials or client identity data belong in the repository.
+## Production object storage
+
+Production document/evidence bytes are handled through `ACME_OBJECT_STORAGE_MODULE`. The adapter must implement `put`, `get`, and `delete`. ACME generates matter-scoped object keys and rejects operations without both matter and object scope. Database records retain metadata/storage references rather than document bytes.
+
+The external storage provider remains responsible for encryption at rest, KMS/key rotation, credentials, durability, replication, versioning, retention/legal holds, backup/restore and disaster recovery. Application authorization must occur before object access.
