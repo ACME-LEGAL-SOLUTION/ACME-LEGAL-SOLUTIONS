@@ -20,8 +20,15 @@ const ROUTES = Object.freeze({
   "/api/ai/review": "ai",
   "/api/reviews": "reviews",
   "/api/partners": "network",
-  "/api/billing": "billing"
+  "/api/billing": "billing",
+  "/api/portal/client": "portal",
+  "/api/portal/professional": "portal"
 });
+
+const PROTECTED_PORTAL_ROUTES = new Set([
+  "/api/portal/client",
+  "/api/portal/professional"
+]);
 
 function createHttpBoundary({ application, authenticate, publicActor = null } = {}) {
   if (!application) throw new Error("Application runtime is required");
@@ -34,8 +41,9 @@ function createHttpBoundary({ application, authenticate, publicActor = null } = 
       if (!actor?.id) throw new Error("Authenticated actor is required");
       return { service: application[serviceName], actor, path };
     },
-    routes: ROUTES
+    routes: ROUTES,
+    protectedPortalRoutes: PROTECTED_PORTAL_ROUTES
   };
 }
 
-module.exports = { ROUTES, createHttpBoundary };
+module.exports = { ROUTES, PROTECTED_PORTAL_ROUTES, createHttpBoundary };
