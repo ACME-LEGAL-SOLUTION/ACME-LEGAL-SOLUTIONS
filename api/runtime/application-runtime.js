@@ -20,6 +20,7 @@ const { createConflictService } = require("./conflict-service");
 const { createDocumentService } = require("./document-service");
 const { createEvidenceService } = require("./evidence-service");
 const { createPortalService } = require("./portal-service");
+const { createPortalMatterService } = require("./portal-matter-service");
 
 function createApplicationRuntime({ repositories, provider, clock = () => new Date(), conflictCheck = null } = {}) {
   if (!repositories) throw new Error("Application repositories are required");
@@ -43,11 +44,12 @@ function createApplicationRuntime({ repositories, provider, clock = () => new Da
   const billing = createBillingService({ invoiceRepository: repositories.invoices, paymentRepository: repositories.payments, audit: repositories.auditService, clock });
   const network = createNetworkService({ repository: repositories.partners, audit: repositories.auditService, clock });
   const portal = createPortalService({ crm, document, evidence, diary, billing, repositories });
+  const portalMatter = createPortalMatterService({ crm, document, evidence, diary, repositories, clock });
   return Object.freeze({
     runtime, crm, intake, consultation, party, relationship, conflict, document, evidence, ai, specialists, specialistRouter, knowledge,
     reviews: ai.governance.reviews,
     source, legalVersions, authorities,
-    diary, billing, network, portal
+    diary, billing, network, portal, portalMatter
   });
 }
 
