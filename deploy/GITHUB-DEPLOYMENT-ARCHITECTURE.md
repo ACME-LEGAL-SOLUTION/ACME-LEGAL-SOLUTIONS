@@ -4,9 +4,11 @@
 
 The GoDaddy Node.js Hosting path is no longer the ACME deployment target.
 
-ACME will use GitHub as the source of truth and GitHub Pages as the hosting platform for the public static experience. The existing GoDaddy Node.js preview app is not part of the target architecture and must not be published or used as the production runtime.
+GitHub remains the source of truth, CI/CD control plane and release authority. The public static experience must use a commercially suitable static hosting/CDN service with GitHub integration; GitHub Pages is not the ACME production target because GitHub's current Pages limitations do not permit using Pages as free web hosting for an online business or commercial SaaS.
 
-GitHub Pages is a static hosting service. ACME's secure Node.js API, persistence, object storage, AI, payments, messaging, secrets and governance services therefore remain separate server-side components. GitHub Pages must never receive production credentials or private application data.
+Cloudflare Pages is the current public-host candidate because it supports GitHub integration, automatic deployments, pull-request previews, custom domains and static HTML. It remains replaceable and is not production-accepted until provider, account, security and DNS acceptance are completed.
+
+The secure Node.js API, persistence, object storage, AI, payments, messaging, secrets and governance services remain separate server-side components.
 
 ## Target topology
 
@@ -16,95 +18,75 @@ GitHub Pages is a static hosting service. ACME's secure Node.js API, persistence
                               |
                     push to main / PR validation
                               |
-                    GitHub Actions CI + Pages
+                         GitHub Actions
                               |
                 +-------------+-------------+
                 |                           |
                 v                           v
-       GitHub Pages                    Node.js API
-       Public Experience              external runtime
-       HTML/CSS/JS                    /health /ready /api/*
+      Commercial Static Host             Node.js API
+      (Cloudflare candidate)             external runtime
+      Public HTML/CSS/JS                 /health /ready /api/*
                 |                           |
                 | HTTPS                     +-------------------+
-                |                           |                   |
-                v                           v                   v
-       acmesol.online                 PostgreSQL          provider boundaries
-                                     persistent DB       object/AI/payment/
-                                                         messaging/secrets
+                v                           |                   |
+       acmesol.online                       v                   v
+                                   PostgreSQL          provider boundaries
+                                   persistent DB       object/AI/payment/
+                                                       messaging/secrets
 ```
 
-## What GitHub hosts
+## Public deployment plane
 
-GitHub Pages hosts only the public website assets:
+The public host receives only deliberately public assets:
 
 - `index.html`
 - `styles/**`
 - `scripts/**`
+- explicitly approved static assets
 
-The Pages workflow deliberately stages only these public assets. It does not publish `api/**`, `docs/**`, deployment files, the Dockerfile, or other server-side repository content.
+It must never receive `api/**`, production credentials, provider tokens, database passwords, webhook secrets, payment credentials, private legal documents or other server-side application data.
 
-The repository is already structured for this split: the public root contains a static `index.html` and the Node.js API starts through `npm start` as `node api/runtime/http-server.js`.
+The public host must deploy the exact accepted Git commit and must not become the source of truth.
 
-## What GitHub does not host
+## Backend deployment plane
 
-GitHub Pages cannot execute the ACME Node.js API. The following remain server-side:
+GitHub Pages cannot execute the ACME Node.js API, so the API remains an independent Node.js web-service deployment.
 
-- identity/authentication adapters
-- RBAC and matter authorization
-- PostgreSQL persistence and migrations
-- object storage
-- AI provider and tool security
-- payments and accounting reconciliation
-- email/WhatsApp delivery
-- secrets and key rotation
-- retention, privacy, backup and disaster recovery
+The current server exposes `npm start` as `node api/runtime/http-server.js` and the repository includes a Docker deployment artifact. The backend provider therefore remains replaceable between a conventional Node.js runtime and Docker-compatible infrastructure.
 
-No secret, API credential, database password, provider token, webhook secret, or document content may be embedded in the Pages artifact.
-
-## Backend runtime target
-
-The backend runtime must be a Node.js web service connected to this repository. The current ACME server already exposes `npm start` and reads the platform `PORT` environment variable, so a conventional Node.js web-service runtime is the least disruptive target.
-
-A free runtime may be used for development/preview only. It must not be treated as production merely because it has a free tier. Production acceptance requires persistent storage, secret management, backups, TLS, monitoring, RPO/RTO compliance and the provider capabilities required by M6.
-
-The backend provider remains replaceable behind the existing provider boundaries. This keeps GitHub as the source of truth without coupling the application architecture to a hosting vendor.
+Production acceptance requires persistent storage, secret management, backups, TLS, monitoring, RPO/RTO compliance and all provider capabilities required by M6.
 
 ## Database target
 
-Production persistence must be an external managed PostgreSQL-compatible database. The repository's migration engine and SQL adapter remain the canonical database contract.
+Production persistence must be an external durable managed PostgreSQL-compatible database. The repository migration engine and SQL adapter remain the canonical database contract.
 
-Do not use a free/ephemeral SQLite filesystem as production persistence. The application already supports PostgreSQL, MySQL, MariaDB and SQLite at the persistence boundary, but production acceptance requires a durable provider and the existing migration/checksum governance.
+Do not use a free/ephemeral SQLite filesystem as production persistence. Production acceptance requires migration/checksum compatibility, backup/restore, access controls, encryption and demonstrated RPO/RTO.
 
 ## Domains
 
-The intended public website domain can be attached to GitHub Pages after the Pages deployment is accepted. DNS remains a DNS concern; changing nameservers is not required merely because the site is hosted on GitHub Pages.
+Target separation:
 
-The API should use a separate hostname, for example `api.acmesol.online`, so browser traffic to the public site and authenticated server traffic remain cleanly separated.
+- public website: `acmesol.online` / `www.acmesol.online`
+- secure API: `api.acmesol.online`
 
-Do not change DNS until the GitHub Pages deployment is green and the API endpoint has passed its own acceptance tests.
+Do not change DNS until the public deployment and backend have both passed acceptance.
 
 ## Deployment flow
 
-1. Pull request runs the existing ACME test suite and production package validation.
+1. Pull request runs the ACME test suite and production package validation.
 2. Merge to `main`.
-3. GitHub Pages workflow stages only public static assets.
-4. GitHub Pages deploys the public artifact.
-5. Backend runtime pulls the same `main` commit through its Git integration.
-6. Backend deploy runs migrations against the production database before traffic is accepted.
-7. `/health` must return 200.
-8. `/ready` must return 200 only when all required production adapters and persistence checks pass.
+3. GitHub remains the release source of truth.
+4. Public host deploys only the approved public artifact from the accepted commit.
+5. Backend runtime deploys the same accepted commit.
+6. Backend migrations run against the production database before traffic is accepted.
+7. `/health` returns 200.
+8. `/ready` returns 200 only when all required production adapters and persistence checks pass.
 9. Auth/RBAC, matter authorization, object storage, AI, payment, messaging, retention/backup and audit E2E acceptance runs against the backend.
-10. Only after both public and backend gates are green should the custom domain be switched to the new public site.
+10. Only after all gates are green should the custom domain be switched to the accepted public site.
 
-## GitHub Pages configuration
+## GitHub role
 
-In repository **Settings → Pages**:
-
-- Source: **GitHub Actions**
-- Do not use a branch-root deployment for this repository.
-- The `github-pages` environment should be protected so only the intended deployment path can publish.
-
-The workflow is `.github/workflows/github-pages.yml`.
+GitHub is the authoritative control plane for source, review, CI, release commits and deployment provenance. A public hosting provider must not require the repository to become a mirror of provider-managed source.
 
 ## GoDaddy decommissioning rule
 
@@ -112,28 +94,29 @@ The existing GoDaddy Node.js app `am929rg5lx` is a deployment experiment only. I
 
 Do not purchase a GoDaddy Node.js Hosting plan for ACME.
 
-Once GitHub Pages and the replacement backend have passed acceptance and no GoDaddy data needs to be retained, the unused GoDaddy preview app can be deleted separately as a cleanup task.
+Once the replacement public/backend deployment has passed acceptance and no GoDaddy data needs to be retained, the unused GoDaddy preview app can be deleted separately as a cleanup task.
 
 ## Acceptance evidence
 
 Record:
 
-- Git commit SHA deployed to Pages
-- GitHub Pages workflow run URL/status
-- Pages URL and custom-domain HTTPS status
+- accepted Git commit SHA
+- public-host deployment ID/URL
+- public-host HTTPS/custom-domain status
 - backend deployment ID and commit SHA
 - backend `/health` and `/ready` responses
 - migration versions/checksums
 - provider adapter acceptance results
 - backup/restore and RPO/RTO evidence
 - authenticated E2E results
-- confirmation that no secrets or private server-side files entered the Pages artifact
+- confirmation that no secrets or private server-side files entered the public artifact
 
 ## Hard stop conditions
 
 Stop deployment if:
 
-- the Pages artifact contains server-side application files or secrets;
+- the public artifact contains server-side application files or secrets;
+- the selected public host's terms are incompatible with ACME's commercial use;
 - the backend is configured without a production identity adapter;
 - persistence is ephemeral or migration checksums do not match;
 - `/ready` reports not ready;
