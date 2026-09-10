@@ -42,11 +42,18 @@ test("development readiness remains available without production adapters", asyn
 });
 
 test("production readiness requires persistence and all provider boundaries", async () => {
-  const readiness = createReadiness({ env: productionEnv, repositories: {}, persistence: {} });
+  const readiness = createReadiness({ env: productionEnv, repositories: {}, persistence: { driver: {} } });
   const result = await readiness();
   assert.equal(result.status, "ready");
   assert.equal(result.checks.requiredAdapters, true);
   assert.equal(result.checks.persistence, true);
+});
+
+test("production readiness fails when persistence is absent", async () => {
+  const readiness = createReadiness({ env: productionEnv, repositories: {}, persistence: null });
+  const result = await readiness();
+  assert.equal(result.status, "not_ready");
+  assert.equal(result.checks.persistence, false);
 });
 
 test("HTTP boundary exposes readiness and security headers", async (t) => {
