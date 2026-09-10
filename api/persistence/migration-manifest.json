@@ -23,7 +23,7 @@
       "file": "api/persistence/migrations/003_legal_source_governance.sql",
       "schema": "api/persistence/schema/003_legal_source_governance.sql",
       "checksumAlgorithm": "git-blob-sha1",
-      "checksum": "3777d2a6ab646f0b562aadc82b8eac88997d8684",
+      "checksum": "016e9932bacaf44a627f5edc1dab3087f4ac958f",
       "rollback": "provider-specific-before-production-approval"
     }
   ],
