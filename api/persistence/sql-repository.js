@@ -20,21 +20,23 @@ const DEFINITIONS = Object.freeze({
   hearings: { table: "hearings", fields: { id: "id", matterId: "matter_id", authorityId: "authority_id", scheduledAt: "scheduled_at", status: "status", createdAt: "created_at" } },
   invoices: { table: "invoices", fields: { id: "id", clientId: "client_id", matterId: "matter_id", status: "status", currencyCode: "currency_code", totalAmount: "total_amount", issuedAt: "issued_at", dueAt: "due_at" } },
   payments: { table: "payments", fields: { id: "id", invoiceId: "invoice_id", status: "status", currencyCode: "currency_code", amount: "amount", providerReference: "provider_reference", createdAt: "created_at" } },
-  partners: { table: "partners", fields: { id: "id", name: "name", verificationState: "verification_state", jurisdictions: "jurisdictions_json", jurisdictionsJson: "jurisdictions_json", specialties: "specialties_json", specialtiesJson: "specialties_json", contact: "contact_json", contactJson: "contact_json", createdAt: "created_at" }
+  partners: { table: "partners", fields: { id: "id", name: "name", verificationState: "verification_state", jurisdictions: "jurisdictions_json", jurisdictionsJson: "jurisdictions_json", specialties: "specialties_json", specialtiesJson: "specialties_json", contact: "contact_json", contactJson: "contact_json", createdAt: "created_at" } },
+  workPackages: { table: "work_packages", fields: { id: "id", matterId: "matter_id", state: "state", issue: "issue", jurisdiction: "jurisdiction", applicableDate: "applicable_date", payload: "payload_json", payloadJson: "payload_json", provenance: "provenance_json", provenanceJson: "provenance_json", confidence: "confidence", createdAt: "created_at", updatedAt: "updated_at", createdBy: "created_by", approvedBy: "approved_by", finalizedBy: "finalized_by" } }
 });
 
-const JSON_FIELDS = new Set(["audit.payload", "audit.payloadJson", "partners.jurisdictions", "partners.jurisdictionsJson", "partners.specialties", "partners.specialtiesJson", "partners.contact", "partners.contactJson"]);
+const JSON_FIELDS = new Set([
+  "audit.payload", "audit.payloadJson", "partners.jurisdictions", "partners.jurisdictionsJson", "partners.specialties", "partners.specialtiesJson", "partners.contact", "partners.contactJson",
+  "workPackages.payload", "workPackages.payloadJson", "workPackages.provenance", "workPackages.provenanceJson"
+]);
 const READ_ALIASES = Object.freeze({ assigned_user_id: "ownerId" });
 
 function safeIdentifier(value) {
   if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(value)) throw new Error("Unsafe SQL identifier");
   return value;
 }
-
 function serialize(name, field, value) {
   return JSON_FIELDS.has(`${name}.${field}`) && value !== null && value !== undefined ? JSON.stringify(value) : value;
 }
-
 function deserialize(name, row) {
   const definition = DEFINITIONS[name];
   const result = {};
@@ -42,52 +44,43 @@ function deserialize(name, row) {
     if (!Object.prototype.hasOwnProperty.call(row, column)) continue;
     let value = row[column];
     if (JSON_FIELDS.has(`${name}.${field}`) && typeof value === "string") {
-      try { value = JSON.parse(value); } catch { /* preserve malformed legacy data for inspection */ }
+      try { value = JSON.parse(value); } catch { /* preserve malformed legacy data */ }
     }
-    result[field === "payloadJson" || field === "jurisdictionsJson" || field === "specialtiesJson" || field === "contactJson" ? field.replace(/Json$/, "") : (READ_ALIASES[column] || field)] = value;
+    const outputField = ["payloadJson", "provenanceJson", "jurisdictionsJson", "specialtiesJson", "contactJson"].includes(field) ? field.replace(/Json$/, "") : (READ_ALIASES[column] || field);
+    result[outputField] = value;
   }
   return result;
 }
-
 function createSqlRepository({ name, query } = {}) {
   const definition = DEFINITIONS[name];
   if (!definition) throw new Error(`Unsupported SQL repository: ${name}`);
   if (typeof query !== "function") throw new TypeError("SQL repository query function is required");
   const table = safeIdentifier(definition.table);
   const fields = definition.fields;
-
   function mapInput(input) {
-    const entries = [];
-    for (const [field, value] of Object.entries(input || {})) {
+    return Object.entries(input || {}).flatMap(([field, value]) => {
       const column = fields[field];
-      if (!column || field === "createdBy" || field === "ownerId" && name !== "matters") continue;
-      entries.push([safeIdentifier(column), serialize(name, field, value)]);
-    }
-    return entries;
+      return column ? [[safeIdentifier(column), serialize(name, field, value)]] : [];
+    });
   }
-
   async function create(input = {}) {
     const record = { ...input, id: input.id || randomUUID() };
     const entries = mapInput(record);
     if (!entries.length) throw new Error(`No persistable fields supplied for repository: ${name}`);
     const columns = entries.map(([column]) => column);
     const values = entries.map(([, value]) => value);
-    const placeholders = values.map(() => "?").join(", ");
-    const result = await query(`INSERT INTO ${table} (${columns.join(", ")}) VALUES (${placeholders})`, values);
+    const result = await query(`INSERT INTO ${table} (${columns.join(", ")}) VALUES (${values.map(() => "?").join(", ")})`, values);
     return deserialize(name, (result.rows || [])[0] || record);
   }
-
   async function getById(id) {
     if (!id) throw new Error(`${name} id is required`);
     const result = await query(`SELECT * FROM ${table} WHERE id = ?`, [id]);
     return result.rows?.length ? deserialize(name, result.rows[0]) : null;
   }
-
   async function list() {
     const result = await query(`SELECT * FROM ${table}`);
     return (result.rows || []).map((row) => deserialize(name, row));
   }
-
   async function update(id, patch = {}) {
     if (!id) throw new Error(`${name} id is required`);
     const entries = mapInput(patch);
@@ -102,10 +95,8 @@ function createSqlRepository({ name, query } = {}) {
     }
     return getById(id);
   }
-
   return Object.freeze({ create, getById, list, update });
 }
-
 function createSqlRepositories({ query } = {}) {
   const repositories = Object.fromEntries(Object.keys(DEFINITIONS).map((name) => [name, createSqlRepository({ name, query })]));
   const baseTransition = repositories.matters.update;
@@ -116,10 +107,7 @@ function createSqlRepositories({ query } = {}) {
       return baseTransition(id, { status, updatedAt: new Date().toISOString(), lastTransitionBy: actor.id, lastReviewId: review?.id || null });
     }
   });
-  repositories.auditService = Object.freeze({
-    append: (event) => repositories.audit.create(event),
-    list: () => repositories.audit.list()
-  });
+  repositories.auditService = Object.freeze({ append: (event) => repositories.audit.create(event), list: () => repositories.audit.list() });
   return Object.freeze(repositories);
 }
 
