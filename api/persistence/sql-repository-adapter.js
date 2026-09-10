@@ -32,12 +32,12 @@ const TO_DB = Object.freeze({
   checkedAt: "checked_at", checkedBy: "checked_by", documentType: "document_type", storageKey: "storage_key", evidenceType: "evidence_type", sourceDocumentId: "source_document_id",
   interactionType: "interaction_type", provenanceState: "provenance_state", humanReviewRequired: "human_review_required", aiInteractionId: "ai_interaction_id",
   reviewerId: "reviewer_id", finalActionAuthorized: "final_action_authorized", decidedAt: "decided_at", actorId: "actor_id", actorType: "actor_type",
-  eventType: "event_type", payloadJson: "payload_json", payload: "payload_json", sourceType: "source_type", verificationState: "verification_state", effectiveDate: "effective_date",
+  eventType: "event_type", payloadJson: "payload_json", sourceType: "source_type", verificationState: "verification_state", effectiveDate: "effective_date",
   legalInstrumentId: "legal_instrument_id", validFrom: "valid_from", validTo: "valid_to", amendmentState: "amendment_state", sourceId: "source_id",
   authorityId: "authority_id", authorityType: "authority_type", entryType: "entry_type", scheduledAt: "scheduled_at", currencyCode: "currency_code",
   totalAmount: "total_amount", issuedAt: "issued_at", dueAt: "due_at", invoiceId: "invoice_id", providerReference: "provider_reference",
   jurisdictions: "jurisdictions_json", specialties: "specialties_json", contact: "contact_json",
-  state: "state", issue: "issue", applicableDate: "applicable_date", provenanceJson: "provenance_json", provenance: "provenance_json", confidence: "confidence",
+  state: "state", issue: "issue", applicableDate: "applicable_date", provenanceJson: "provenance_json", confidence: "confidence",
   createdBy: "created_by", approvedBy: "approved_by", finalizedBy: "finalized_by"
 });
 const FROM_DB = Object.freeze(Object.fromEntries(Object.entries(TO_DB).map(([key, value]) => [value, key])));
@@ -48,7 +48,7 @@ function requireExecutor(executor) {
 }
 function encodeValue(key, value) {
   if (value === undefined) return null;
-  if (["payloadJson", "payload", "provenanceJson", "provenance", "jurisdictions", "specialties", "contact"].includes(key) && value !== null && typeof value !== "string") return JSON.stringify(value);
+  if (["payloadJson", "provenanceJson", "jurisdictions", "specialties", "contact"].includes(key) && value !== null && typeof value !== "string") return JSON.stringify(value);
   return value;
 }
 function decodeRow(row) {
