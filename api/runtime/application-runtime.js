@@ -3,6 +3,7 @@
 const { createRuntime } = require("./index");
 const { createAIGateway } = require("./ai-gateway-runtime");
 const { SPECIALIST_ROLES, createSpecialistAgent } = require("./specialist-agent");
+const { createSpecialistRouter } = require("./specialist-router");
 const { createKnowledgeAccessGateway } = require("./knowledge-access-gateway");
 const { createSourceService } = require("./source-service");
 const { createLegalVersionService } = require("./legal-version-service");
@@ -33,16 +34,12 @@ function createApplicationRuntime({ repositories, provider, clock = () => new Da
   const source = createSourceService({ repository: repositories.sources, clock });
   const legalVersions = createLegalVersionService({ repository: repositories.legalVersions, clock });
   const authorities = createAuthorityService({ repository: repositories.authorities, clock });
-  const knowledge = createKnowledgeAccessGateway({
-    sources: source,
-    legalVersions,
-    authorities,
-    evidence
-  });
+  const knowledge = createKnowledgeAccessGateway({ sources: source, legalVersions, authorities, evidence });
   const specialists = Object.freeze(Object.fromEntries(SPECIALIST_ROLES.map((role) => [role, createSpecialistAgent({ role, provider, knowledgeGateway: knowledge, clock })])));
+  const specialistRouter = createSpecialistRouter({ specialists });
   const ai = createAIGateway({ repositories, provider, specialistAgent: specialists.legal_research, clock });
   return Object.freeze({
-    runtime, crm, intake, consultation, party, relationship, conflict, document, evidence, ai, specialists, knowledge,
+    runtime, crm, intake, consultation, party, relationship, conflict, document, evidence, ai, specialists, specialistRouter, knowledge,
     reviews: ai.governance.reviews,
     source, legalVersions, authorities,
     diary: createDiaryService({ repository: repositories.diary, audit: repositories.auditService, clock }),
