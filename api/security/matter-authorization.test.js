@@ -21,9 +21,9 @@ test("matter authorization denies before transactional work begins", async () =>
 
 test("matter authorization permits only the resolved matter scope", async () => {
   const events = [];
-  const authorization = createMatterAuthorization({ resolveAccess: async ({ actor, matterId }) => actor.id === "actor-1" && matterId === "matter-1" });
+  const authorization = createMatterAuthorization({ resolveAccess: async ({ actor, matterId, action }) => actor.id === "actor-1" && matterId === "matter-1" && action === "update" });
   const operations = createMatterScopedOperations({ authorization, transaction: transactionStub(events) });
-  const result = await operations.run({ actor: { id: "actor-1" }, matterId: "matter-1", action: "document.write", work: async ({ tx, matterId }) => ({ tx: tx.id, matterId }) });
+  const result = await operations.run({ actor: { id: "actor-1" }, matterId: "matter-1", action: "update", work: async ({ tx, matterId }) => ({ tx: tx.id, matterId }) });
   assert.deepEqual(result, { tx: "tx-1", matterId: "matter-1" });
   assert.deepEqual(events, ["begin", "commit"]);
 });
