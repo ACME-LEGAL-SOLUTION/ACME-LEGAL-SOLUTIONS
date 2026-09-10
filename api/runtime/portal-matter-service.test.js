@@ -15,18 +15,8 @@ function setup() {
   const document = {};
   const evidenceService = {};
   const diary = { listMatter: async () => [{ id: "diary-1" }] };
-  return {
-    matters,
-    workPackages,
-    audit,
-    portalMatter: createPortalMatterService({
-      crm,
-      document,
-      evidence: evidenceService,
-      diary,
-      repositories: { matters, documents, evidence, workPackages, audit }
-    })
-  };
+  const dependencies = { crm, document, evidence: evidenceService, diary, repositories: { matters, documents, evidence, workPackages, audit } };
+  return { matters, workPackages, audit, dependencies, portalMatter: createPortalMatterService(dependencies) };
 }
 
 test("matter details are scoped to the authenticated client", async () => {
@@ -39,7 +29,7 @@ test("matter details are scoped to the authenticated client", async () => {
 });
 
 test("work package creation and transitions persist across service instances", async () => {
-  const { matters, workPackages, portalMatter, audit } = setup();
+  const { matters, workPackages, portalMatter, audit, dependencies } = setup();
   await matters.create({ id: "m1", clientId: "c1", title: "Matter One", issue: "Issue", jurisdiction: "IN", status: "open" });
   const professional = { id: "p1", role: "professional", human: true };
   const workPackage = await portalMatter.createPackage({
@@ -56,7 +46,7 @@ test("work package creation and transitions persist across service instances", a
   assert.equal(finalized.provenance.length, 1);
   assert.equal((await audit.list()).length, 3);
 
-  const secondInstance = createPortalMatterService({ crm: { getMatter: async (id) => matters.getById(id) }, document, evidence: evidenceService, diary, repositories: { matters, documents, evidence, workPackages, audit } });
+  const secondInstance = createPortalMatterService(dependencies);
   const persisted = await secondInstance.matterDetails({ matterId: "m1", actor: professional });
   assert.equal(persisted.workPackage.state, "finalized");
   assert.equal(persisted.workPackage.provenance.length, 1);
