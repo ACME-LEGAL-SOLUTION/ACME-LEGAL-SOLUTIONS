@@ -20,15 +20,10 @@ const DEFINITIONS = Object.freeze({
   hearings: { table: "hearings", fields: { id: "id", matterId: "matter_id", authorityId: "authority_id", scheduledAt: "scheduled_at", status: "status", createdAt: "created_at" } },
   invoices: { table: "invoices", fields: { id: "id", clientId: "client_id", matterId: "matter_id", status: "status", currencyCode: "currency_code", totalAmount: "total_amount", issuedAt: "issued_at", dueAt: "due_at" } },
   payments: { table: "payments", fields: { id: "id", invoiceId: "invoice_id", status: "status", currencyCode: "currency_code", amount: "amount", providerReference: "provider_reference", createdAt: "created_at" } },
-  partners: { table: "partners", fields: { id: "id", name: "name", verificationState: "verification_state", jurisdictions: "jurisdictions_json", jurisdictionsJson: "jurisdictions_json", specialties: "specialties_json", specialtiesJson: "specialties_json", contact: "contact_json", contactJson: "contact_json", createdAt: "created_at" } },
-  workPackages: { table: "work_packages", fields: { id: "id", matterId: "matter_id", state: "state", issue: "issue", jurisdiction: "jurisdiction", applicableDate: "applicable_date", payload: "payload_json", payloadJson: "payload_json", provenance: "provenance_json", provenanceJson: "provenance_json", confidence: "confidence", createdAt: "created_at", updatedAt: "updated_at", createdBy: "created_by", approvedBy: "approved_by", finalizedBy: "finalized_by" } }
+  partners: { table: "partners", fields: { id: "id", name: "name", verificationState: "verification_state", jurisdictions: "jurisdictions_json", jurisdictionsJson: "jurisdictions_json", specialties: "specialties_json", specialtiesJson: "specialties_json", contact: "contact_json", contactJson: "contact_json", createdAt: "created_at" }
 });
 
-const JSON_FIELDS = new Set([
-  "audit.payload", "audit.payloadJson", "partners.jurisdictions", "partners.jurisdictionsJson",
-  "partners.specialties", "partners.specialtiesJson", "partners.contact", "partners.contactJson",
-  "workPackages.payload", "workPackages.payloadJson", "workPackages.provenance", "workPackages.provenanceJson"
-]);
+const JSON_FIELDS = new Set(["audit.payload", "audit.payloadJson", "partners.jurisdictions", "partners.jurisdictionsJson", "partners.specialties", "partners.specialtiesJson", "partners.contact", "partners.contactJson"]);
 const READ_ALIASES = Object.freeze({ assigned_user_id: "ownerId" });
 
 function safeIdentifier(value) {
@@ -49,7 +44,7 @@ function deserialize(name, row) {
     if (JSON_FIELDS.has(`${name}.${field}`) && typeof value === "string") {
       try { value = JSON.parse(value); } catch { /* preserve malformed legacy data for inspection */ }
     }
-    result[field === "payloadJson" || field === "jurisdictionsJson" || field === "specialtiesJson" || field === "contactJson" || field === "provenanceJson" ? field.replace(/Json$/, "") : (READ_ALIASES[column] || field)] = value;
+    result[field === "payloadJson" || field === "jurisdictionsJson" || field === "specialtiesJson" || field === "contactJson" ? field.replace(/Json$/, "") : (READ_ALIASES[column] || field)] = value;
   }
   return result;
 }
@@ -65,7 +60,7 @@ function createSqlRepository({ name, query } = {}) {
     const entries = [];
     for (const [field, value] of Object.entries(input || {})) {
       const column = fields[field];
-      if (!column || field === "createdBy" && name !== "workPackages" || field === "ownerId" && name !== "matters") continue;
+      if (!column || field === "createdBy" || field === "ownerId" && name !== "matters") continue;
       entries.push([safeIdentifier(column), serialize(name, field, value)]);
     }
     return entries;
