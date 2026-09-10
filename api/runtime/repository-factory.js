@@ -5,7 +5,7 @@ const { createCollection } = require("./in-memory-repository");
 const COLLECTIONS = Object.freeze([
   "clients", "relationships", "parties", "conflicts", "documents", "evidence",
   "aiInteractions", "reviews", "audit", "sources", "legalVersions", "authorities",
-  "diary", "hearings", "invoices", "payments", "partners"
+  "diary", "hearings", "invoices", "payments", "partners", "workPackages"
 ]);
 
 function createApplicationRepositories({ clock = () => new Date() } = {}) {
