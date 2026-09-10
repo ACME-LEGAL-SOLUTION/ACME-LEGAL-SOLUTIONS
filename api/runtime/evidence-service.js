@@ -3,41 +3,35 @@
 const TYPES = Object.freeze(["document", "statement", "image", "audio", "video", "record", "other"]);
 const STATUSES = Object.freeze(["unverified", "verified", "disputed", "rejected"]);
 
-function createEvidenceService({ repositories, clock = () => new Date() } = {}) {
-  if (!repositories?.evidence?.create || !repositories?.evidence?.getById) {
-    throw new Error("Evidence repository is required");
-  }
+function createEvidenceService({ repositories, clock = () => new Date(), matterAuthorization = null } = {}) {
+  if (!repositories?.evidence?.create || !repositories?.evidence?.getById) throw new Error("Evidence repository is required");
+  if (matterAuthorization !== null && typeof matterAuthorization.assert !== "function") throw new TypeError("Matter authorization must expose assert");
 
   async function createEvidence(input, actor) {
-    requireActor(actor);
-    if (!input?.matterId) throw new Error("Matter id is required");
-    if (!input?.type || !TYPES.includes(input.type)) throw new Error(`Invalid evidence type: ${input?.type}`);
-    if (!input.title?.trim()) throw new Error("Evidence title is required");
-
-    return repositories.evidence.create({
-      matterId: input.matterId,
-      documentId: input.documentId || null,
-      type: input.type,
-      title: input.title.trim(),
-      status: input.status || "unverified",
-      provenance: input.provenance || null,
-      metadata: input.metadata && typeof input.metadata === "object" ? input.metadata : {},
-      createdBy: actor.id,
-      createdAt: clock().toISOString()
-    }, actor);
+    requireActor(actor); validateInput(input); await assertMatterAccess(input.matterId, actor, "create");
+    return repositories.evidence.create({ matterId: input.matterId, documentId: input.documentId || null, type: input.type, title: input.title.trim(), status: input.status || "unverified", provenance: input.provenance || null, metadata: input.metadata && typeof input.metadata === "object" ? input.metadata : {}, createdBy: actor.id, createdAt: clock().toISOString() }, actor);
   }
 
   async function getEvidence(id, actor) {
-    requireActor(actor);
-    if (!id) throw new Error("Evidence id is required");
-    return repositories.evidence.getById(id);
+    requireActor(actor); if (!id) throw new Error("Evidence id is required");
+    const evidence = await repositories.evidence.getById(id); if (!evidence) return null;
+    await assertMatterAccess(evidence.matterId, actor, "read"); return evidence;
   }
 
-  return { createEvidence, getEvidence };
+  async function assertMatterAccess(matterId, actor, action) {
+    if (matterAuthorization) return matterAuthorization.assert(actor, matterId, action);
+    if (["admin", "professional", "lawyer", "accountant"].includes(actor.role)) return true;
+    if (actor.clientId) return true;
+    throw Object.assign(new Error("Matter access denied"), { statusCode: 403, code: "MATTER_ACCESS_DENIED" });
+  }
+  return Object.freeze({ createEvidence, getEvidence });
 }
 
-function requireActor(actor) {
-  if (!actor?.id) throw new Error("Authenticated actor is required");
+function validateInput(input) {
+  if (!input?.matterId) throw new Error("Matter id is required");
+  if (!input?.type || !TYPES.includes(input.type)) throw new Error(`Invalid evidence type: ${input?.type}`);
+  if (!input.title?.trim()) throw new Error("Evidence title is required");
 }
+function requireActor(actor) { if (!actor?.id) throw new Error("Authenticated actor is required"); }
 
 module.exports = { TYPES, STATUSES, createEvidenceService };
