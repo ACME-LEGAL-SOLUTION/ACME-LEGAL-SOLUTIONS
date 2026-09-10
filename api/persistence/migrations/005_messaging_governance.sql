@@ -1,0 +1,2 @@
+-- Canonical schema is api/persistence/schema/005_messaging_governance.sql.
+-- Migration runner resolves and executes the canonical schema source.
