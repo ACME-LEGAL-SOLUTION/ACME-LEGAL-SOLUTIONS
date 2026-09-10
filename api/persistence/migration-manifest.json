@@ -33,6 +33,14 @@
       "checksumAlgorithm": "git-blob-sha1",
       "checksum": "8bacc23b41468bfbc2453f10d3ea138bc71ec047",
       "rollback": "provider-specific-before-production-approval"
+    },
+    {
+      "version": "005_messaging_governance",
+      "file": "api/persistence/migrations/005_messaging_governance.sql",
+      "schema": "api/persistence/schema/005_messaging_governance.sql",
+      "checksumAlgorithm": "git-blob-sha1",
+      "checksum": "e632661e9a2d533eb3ae08f09428a5f3f1b7b5b5",
+      "rollback": "provider-specific-before-production-approval"
     }
   ],
   "policy": {
