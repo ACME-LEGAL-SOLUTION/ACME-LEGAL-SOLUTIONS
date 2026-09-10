@@ -1,0 +1,1 @@
+Portal HTTP integration checkpoint: authenticated client and professional routes are registered at the HTTP boundary, with explicit route adapters and contract tests. Public consultation remains the sole intentionally public application entry point.
