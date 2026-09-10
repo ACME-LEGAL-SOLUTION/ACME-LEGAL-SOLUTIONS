@@ -19,6 +19,7 @@ const { createRelationshipService } = require("./relationship-service");
 const { createConflictService } = require("./conflict-service");
 const { createDocumentService } = require("./document-service");
 const { createEvidenceService } = require("./evidence-service");
+const { createPortalService } = require("./portal-service");
 
 function createApplicationRuntime({ repositories, provider, clock = () => new Date(), conflictCheck = null } = {}) {
   if (!repositories) throw new Error("Application repositories are required");
@@ -38,13 +39,15 @@ function createApplicationRuntime({ repositories, provider, clock = () => new Da
   const specialists = Object.freeze(Object.fromEntries(SPECIALIST_ROLES.map((role) => [role, createSpecialistAgent({ role, provider, knowledgeGateway: knowledge, clock })])));
   const specialistRouter = createSpecialistRouter({ specialists });
   const ai = createAIGateway({ repositories, provider, specialistAgent: specialists.legal_research, clock });
+  const diary = createDiaryService({ repository: repositories.diary, audit: repositories.auditService, clock });
+  const billing = createBillingService({ invoiceRepository: repositories.invoices, paymentRepository: repositories.payments, audit: repositories.auditService, clock });
+  const network = createNetworkService({ repository: repositories.partners, audit: repositories.auditService, clock });
+  const portal = createPortalService({ crm, document, evidence, diary, billing, repositories });
   return Object.freeze({
     runtime, crm, intake, consultation, party, relationship, conflict, document, evidence, ai, specialists, specialistRouter, knowledge,
     reviews: ai.governance.reviews,
     source, legalVersions, authorities,
-    diary: createDiaryService({ repository: repositories.diary, audit: repositories.auditService, clock }),
-    billing: createBillingService({ invoiceRepository: repositories.invoices, paymentRepository: repositories.payments, audit: repositories.auditService, clock }),
-    network: createNetworkService({ repository: repositories.partners, audit: repositories.auditService, clock })
+    diary, billing, network, portal
   });
 }
 
