@@ -1,0 +1,1 @@
+Authenticated portal HTTP registration validated at source-contract level. Next CI run is required before declaring the milestone green.
