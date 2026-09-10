@@ -10,7 +10,7 @@
 const COLLECTIONS = Object.freeze([
   "clients", "matters", "relationships", "parties", "conflicts", "documents", "evidence",
   "aiInteractions", "reviews", "audit", "sources", "legalVersions", "authorities",
-  "diary", "hearings", "invoices", "payments", "partners"
+  "diary", "hearings", "invoices", "payments", "partners", "workPackages"
 ]);
 
 const METHODS = Object.freeze(["create", "getById", "list", "update"]);
