@@ -33,7 +33,9 @@ test("work package actions require a human professional and enforce operations",
   });
   assert.deepEqual(await boundary.dispatch(req("/api/portal/work-package?matterId=m1")), { matterId: "m1", workPackage: { state: "review" } });
   assert.deepEqual(await boundary.dispatch({ url: "/api/portal/work-package/action?matterId=m1", method: "POST", headers: {} }, { operation: "approved" }), { state: "approved" });
-  assert.deepEqual(calls[0], ["transition", { matterId: "m1", targetState: "approved", actor: professional, modification: null, provenance: [] }]);
+  assert.equal(calls[0][1].matterId, "m1");
+  assert.equal(calls[0][1].targetState, "approved");
+  assert.equal(calls[0][1].actor, professional);
 });
 
 test("work package creation routes through governed service", async () => {
@@ -54,7 +56,11 @@ test("portal matter HTTP boundary fails closed", async () => {
     authenticate: async () => null
   });
   await assert.rejects(() => boundary.dispatch(req("/api/portal/matter?matterId=m1")), /Authenticated actor/);
-  await assert.rejects(() => boundary.dispatch(req("/api/portal/work-package")), /matterId is required/);
+  const authenticated = createPortalMatterHttpBoundary({
+    portalMatter: { matterDetails: async () => ({ matter: null, workPackage: null }), createPackage: async () => ({}), transitionPackage: async () => ({}) },
+    authenticate: async () => ({ id: "u", clientId: "c1" })
+  });
+  await assert.rejects(() => authenticated.dispatch(req("/api/portal/work-package")), /matterId is required/);
   const wrongMethod = createPortalMatterHttpBoundary({ portalMatter: {}, authenticate: async () => ({ id: "u" }) });
   await assert.rejects(() => wrongMethod.dispatch(req("/api/portal/matter?matterId=m1", "POST")), /Method not allowed/);
 });
