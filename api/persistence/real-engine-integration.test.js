@@ -49,19 +49,30 @@ if (!requiredRealIntegrationConfig()) {
     const runner = createMigrationRunner({ manifest, rootDir, storage: adapter, dialect: adapter.dialect });
 
     try {
+      const expectedVersions = manifest.migrations.map((migration) => migration.version);
       const first = await runner.migrate();
       const second = await runner.migrate();
-      assert.deepEqual(first, { applied: ["001_initial_relational_schema"], pending: [] });
+      assert.deepEqual(first, { applied: expectedVersions, pending: [] });
       assert.deepEqual(second, { applied: [], pending: [] });
 
       const applied = await adapter.readAppliedMigrations();
-      assert.equal(applied.length, 1);
-      assert.equal(applied[0].version, "001_initial_relational_schema");
-      assert.equal(applied[0].checksum, manifest.migrations[0].checksum);
+      assert.equal(applied.length, manifest.migrations.length);
+      assert.deepEqual(
+        applied.map((migration) => migration.version),
+        expectedVersions
+      );
+      assert.deepEqual(
+        applied.map((migration) => migration.checksum),
+        manifest.migrations.map((migration) => migration.checksum)
+      );
 
-      const result = await adapter.query("SELECT COUNT(*) AS count FROM clients");
-      assert.equal(Array.isArray(result.rows), true);
-      assert.equal(Number(result.rows[0].count), 0);
+      const clientsResult = await adapter.query("SELECT COUNT(*) AS count FROM clients");
+      assert.equal(Array.isArray(clientsResult.rows), true);
+      assert.equal(Number(clientsResult.rows[0].count), 0);
+
+      const workPackagesResult = await adapter.query("SELECT COUNT(*) AS count FROM work_packages");
+      assert.equal(Array.isArray(workPackagesResult.rows), true);
+      assert.equal(Number(workPackagesResult.rows[0].count), 0);
     } finally {
       await adapter.close();
     }
