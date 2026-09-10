@@ -1,0 +1,43 @@
+name: Self-Hosted Production Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_ref:
+        description: 'Exact Git branch, tag, or commit to deploy'
+        required: true
+        default: 'main'
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: acme-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy ACME API to approved self-host
+    runs-on: [self-hosted, windows, acme-production]
+    environment: production
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout requested release
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_ref }}
+          fetch-depth: 1
+
+      - name: Verify release SHA
+        shell: powershell
+        run: |
+          $sha = (git rev-parse HEAD).Trim()
+          if ($sha -notmatch '^[0-9a-f]{40}$') { throw 'Invalid release SHA.' }
+          Write-Host "Deploying release SHA: $sha"
+
+      - name: Deploy and validate
+        shell: powershell
+        run: |
+          & .\deploy\self-host-deploy.ps1 -Action Deploy -AppRoot $PWD
