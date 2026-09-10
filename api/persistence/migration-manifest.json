@@ -15,7 +15,15 @@
       "file": "api/persistence/migrations/002_work_packages.sql",
       "schema": "api/persistence/schema/002_work_packages.sql",
       "checksumAlgorithm": "git-blob-sha1",
-      "checksum": "b5f35bc120a42982014913234e971a11e3600be9",
+      "checksum": "b5f35bc120a42982014913234e971a11e3605be9",
+      "rollback": "provider-specific-before-production-approval"
+    },
+    {
+      "version": "003_legal_source_governance",
+      "file": "api/persistence/migrations/003_legal_source_governance.sql",
+      "schema": "api/persistence/schema/003_legal_source_governance.sql",
+      "checksumAlgorithm": "git-blob-sha1",
+      "checksum": "3777d2a6ab646f0b562aadc82b8eac88997d8684",
       "rollback": "provider-specific-before-production-approval"
     }
   ],
