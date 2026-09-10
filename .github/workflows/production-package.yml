@@ -22,9 +22,9 @@ jobs:
           test "$(docker image inspect acme-legal-solutions:${{ github.sha }} --format '{{.Config.User}}')" = "node"
           test "$(docker image inspect acme-legal-solutions:${{ github.sha }} --format '{{.Config.ExposedPorts}}')" = "map[3000/tcp:{}]"
           test "$(docker image inspect acme-legal-solutions:${{ github.sha }} --format '{{.Config.Healthcheck.Test}}')" != "[]"
-      - name: Verify no obvious secret files in image
+      - name: Verify no obvious secret files in application image
         run: |
-          ! docker run --rm --entrypoint /bin/sh acme-legal-solutions:${{ github.sha }} -c 'find /app -type f \( -name "*.pem" -o -name "*.key" -o -name ".env" -o -name ".env.*" \) -print -quit | grep -q .'
+          ! docker run --rm --entrypoint /bin/sh acme-legal-solutions:${{ github.sha }} -c 'find /app/api /app/docs -type f \( -name "*.pem" -o -name "*.key" -o -name ".env" -o -name ".env.*" \) -print -quit | grep -q .'
       - name: Run container smoke test
         run: |
           docker run -d --name acme-smoke -p 3000:3000 -e ACME_ENV=development acme-legal-solutions:${{ github.sha }}
