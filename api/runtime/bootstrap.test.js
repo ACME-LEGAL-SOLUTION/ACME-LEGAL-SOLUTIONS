@@ -25,11 +25,21 @@ test("production bootstrap fails closed without an AI provider", async () => {
   await assert.rejects(() => createApplicationBootstrap({ env: { ACME_ENV: "production" }, productionPersistenceFactory: () => { throw new Error("should not be called"); } }).start(), /AI provider adapter/);
 });
 
-test("production bootstrap runs migrations before exposing the application", async () => {
+test("production bootstrap fails closed without an identity adapter", async () => {
+  await assert.rejects(() => createApplicationBootstrap({
+    env: { ACME_ENV: "production" },
+    provider: { execute: async () => ({ answer: "draft" }) },
+    productionPersistenceFactory: () => { throw new Error("should not be called"); }
+  }).start(), /ACME_AUTH_MODULE/);
+});
+
+test("production bootstrap runs migrations before exposing the application and carries identity adapter", async () => {
   const persistence = fakePersistence();
+  const authenticate = async () => ({ id: "u-1", role: "professional", human: true });
   const result = await createApplicationBootstrap({
     env: { ACME_ENV: "production", ACME_DB_PROVIDER: "sqlite", ACME_DB_URL: "file:///tmp/acme-test.db", ACME_DB_SSL: "false" },
     provider: { execute: async () => ({ answer: "draft" }) },
+    authenticate,
     productionPersistenceFactory: () => persistence,
     applicationRuntimeFactory: ({ repositories }) => ({ repositories }),
     migrationManifest: { migrationTable: "acme_migrations", migrations: [] },
@@ -37,5 +47,6 @@ test("production bootstrap runs migrations before exposing the application", asy
   }).start();
   assert.ok(result.migrationRunner);
   assert.equal(result.application.repositories, persistence.repositories);
+  assert.equal(result.authenticate, authenticate);
   await result.close();
 });
