@@ -3,6 +3,7 @@
 const { createRuntime } = require("./index");
 const { createAIGateway } = require("./ai-gateway-runtime");
 const { SPECIALIST_ROLES, createSpecialistAgent } = require("./specialist-agent");
+const { createKnowledgeAccessGateway } = require("./knowledge-access-gateway");
 const { createSourceService } = require("./source-service");
 const { createLegalVersionService } = require("./legal-version-service");
 const { createAuthorityService } = require("./authority-service");
@@ -29,14 +30,21 @@ function createApplicationRuntime({ repositories, provider, clock = () => new Da
   const evidence = createEvidenceService({ repositories, clock });
   const intake = createIntakeService({ repositories, clock, conflictCheck });
   const consultation = createConsultationService({ intake, clock });
-  const specialists = Object.freeze(Object.fromEntries(SPECIALIST_ROLES.map((role) => [role, createSpecialistAgent({ role, provider, clock })])));
+  const source = createSourceService({ repository: repositories.sources, clock });
+  const legalVersions = createLegalVersionService({ repository: repositories.legalVersions, clock });
+  const authorities = createAuthorityService({ repository: repositories.authorities, clock });
+  const knowledge = createKnowledgeAccessGateway({
+    sources: source,
+    legalVersions,
+    authorities,
+    evidence
+  });
+  const specialists = Object.freeze(Object.fromEntries(SPECIALIST_ROLES.map((role) => [role, createSpecialistAgent({ role, provider, knowledgeGateway: knowledge, clock })])));
   const ai = createAIGateway({ repositories, provider, specialistAgent: specialists.legal_research, clock });
   return Object.freeze({
-    runtime, crm, intake, consultation, party, relationship, conflict, document, evidence, ai, specialists,
+    runtime, crm, intake, consultation, party, relationship, conflict, document, evidence, ai, specialists, knowledge,
     reviews: ai.governance.reviews,
-    source: createSourceService({ repository: repositories.sources, clock }),
-    legalVersions: createLegalVersionService({ repository: repositories.legalVersions, clock }),
-    authorities: createAuthorityService({ repository: repositories.authorities, clock }),
+    source, legalVersions, authorities,
     diary: createDiaryService({ repository: repositories.diary, audit: repositories.auditService, clock }),
     billing: createBillingService({ invoiceRepository: repositories.invoices, paymentRepository: repositories.payments, audit: repositories.auditService, clock }),
     network: createNetworkService({ repository: repositories.partners, audit: repositories.auditService, clock })
