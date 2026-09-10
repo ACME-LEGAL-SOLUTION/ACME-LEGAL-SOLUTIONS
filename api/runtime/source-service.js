@@ -3,7 +3,7 @@
 const SOURCE_TYPES = Object.freeze(["primary_authority", "secondary_authority", "commentary", "historical_material", "unverified_info", "ai_inference"]);
 
 function createSourceService({ repository, clock = () => new Date() } = {}) {
-  if (!repository?.create) throw new Error("Source repository is not configured");
+  if (!repository?.create || !repository?.list) throw new Error("Source repository is not configured");
 
   return {
     async register({ title, sourceType, jurisdiction, issuingAuthority = null, effectiveDate = null, verificationState = "unverified", locator = null, actor }) {
@@ -12,6 +12,15 @@ function createSourceService({ repository, clock = () => new Date() } = {}) {
       if (!SOURCE_TYPES.includes(sourceType)) throw new Error(`Invalid source type: ${sourceType}`);
       if (!jurisdiction) throw new Error("Jurisdiction is required");
       return repository.create({ title, sourceType, jurisdiction, issuingAuthority, effectiveDate, verificationState, locator, registeredBy: actor.id, createdAt: clock().toISOString() });
+    },
+    async getById(id) {
+      if (!id) throw new Error("Source id is required");
+      if (repository.getById) return repository.getById(id);
+      return (await repository.list()).find((item) => item.id === id) || null;
+    },
+    async listByJurisdiction(jurisdiction) {
+      if (!jurisdiction) throw new Error("Jurisdiction is required");
+      return (await repository.list()).filter((item) => item.jurisdiction === jurisdiction);
     },
     async verify(source, actor, verificationState = "verified") {
       if (!source?.id) throw new Error("Source is required");
