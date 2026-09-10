@@ -28,7 +28,14 @@ function createPersistentApplication({ executor, begin, commit, rollback, provid
     : null;
   const crmOperations = createPersistentCrmOperations({ transaction, repositories, repositoryFactory: scopedRepositoryFactory, matterAuthorization: authorization, clock });
   const matterDomainOperations = createPersistentMatterOperations({ transaction, repositories, repositoryFactory: scopedRepositoryFactory, matterAuthorization: authorization, clock });
-  const application = createApplicationRuntime({ repositories, provider, clock });
+  const application = createApplicationRuntime({
+    repositories,
+    provider,
+    clock,
+    transaction,
+    repositoryFactory: scopedRepositoryFactory,
+    matterAuthorization: authorization
+  });
 
   return Object.freeze({
     application, repositories, storage, transaction, operations, crmOperations,
