@@ -21,7 +21,8 @@ const DEFINITIONS = Object.freeze({
   hearings: { table: "hearings", columns: ["id", "matter_id", "authority_id", "scheduled_at", "status", "created_at"] },
   invoices: { table: "invoices", columns: ["id", "client_id", "matter_id", "status", "currency_code", "total_amount", "issued_at", "due_at"] },
   payments: { table: "payments", columns: ["id", "invoice_id", "status", "currency_code", "amount", "provider_reference", "created_at"] },
-  partners: { table: "partners", columns: ["id", "name", "verification_state", "jurisdictions_json", "specialties_json", "contact_json", "created_at"] }
+  partners: { table: "partners", columns: ["id", "name", "verification_state", "jurisdictions_json", "specialties_json", "contact_json", "created_at"] },
+  workPackages: { table: "work_packages", columns: ["id", "matter_id", "state", "issue", "jurisdiction", "applicable_date", "payload_json", "provenance_json", "confidence", "created_at", "updated_at", "created_by", "approved_by", "finalized_by"] }
 });
 
 const TO_DB = Object.freeze({
@@ -35,7 +36,9 @@ const TO_DB = Object.freeze({
   legalInstrumentId: "legal_instrument_id", validFrom: "valid_from", validTo: "valid_to", amendmentState: "amendment_state", sourceId: "source_id",
   authorityId: "authority_id", authorityType: "authority_type", entryType: "entry_type", scheduledAt: "scheduled_at", currencyCode: "currency_code",
   totalAmount: "total_amount", issuedAt: "issued_at", dueAt: "due_at", invoiceId: "invoice_id", providerReference: "provider_reference",
-  jurisdictions: "jurisdictions_json", specialties: "specialties_json", contact: "contact_json"
+  jurisdictions: "jurisdictions_json", specialties: "specialties_json", contact: "contact_json",
+  state: "state", issue: "issue", applicableDate: "applicable_date", provenanceJson: "provenance_json", confidence: "confidence",
+  createdBy: "created_by", approvedBy: "approved_by", finalizedBy: "finalized_by"
 });
 const FROM_DB = Object.freeze(Object.fromEntries(Object.entries(TO_DB).map(([key, value]) => [value, key])));
 const camel = (column) => FROM_DB[column] || column.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
@@ -45,14 +48,14 @@ function requireExecutor(executor) {
 }
 function encodeValue(key, value) {
   if (value === undefined) return null;
-  if (["payloadJson", "jurisdictions", "specialties", "contact"].includes(key) && value !== null && typeof value !== "string") return JSON.stringify(value);
+  if (["payloadJson", "provenanceJson", "jurisdictions", "specialties", "contact"].includes(key) && value !== null && typeof value !== "string") return JSON.stringify(value);
   return value;
 }
 function decodeRow(row) {
   if (!row) return null;
   return Object.fromEntries(Object.entries(row).map(([column, value]) => {
     const key = camel(column);
-    if (["payloadJson", "jurisdictions", "specialties", "contact"].includes(key) && typeof value === "string") {
+    if (["payloadJson", "provenanceJson", "jurisdictions", "specialties", "contact"].includes(key) && typeof value === "string") {
       try { return [key, JSON.parse(value)]; } catch { return [key, value]; }
     }
     return [key, value];
