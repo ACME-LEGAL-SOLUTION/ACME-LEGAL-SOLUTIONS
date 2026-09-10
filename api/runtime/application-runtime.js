@@ -29,8 +29,8 @@ function createApplicationRuntime({ repositories, provider, clock = () => new Da
   const party = createPartyService({ repositories, clock });
   const relationship = createRelationshipService({ repositories, clock });
   const conflict = createConflictService({ repositories, clock });
-  const document = createDocumentService({ repositories, clock, objectStorage, matterAuthorization });
-  const evidence = createEvidenceService({ repositories, clock, matterAuthorization });
+  const document = createDocumentService({ repositories, clock, objectStorage, matterAuthorization, transaction, repositoryFactory });
+  const evidence = createEvidenceService({ repositories, clock, matterAuthorization, transaction, repositoryFactory });
   const intake = createIntakeService({ repositories, clock, conflictCheck });
   const consultation = createConsultationService({ intake, clock });
   const source = createSourceService({ repository: repositories.sources, clock });
