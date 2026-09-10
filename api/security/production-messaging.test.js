@@ -2,11 +2,7 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const {
-  createProductionMessagingProvider,
-  createMessagingGovernance,
-  retryDelayMs
-} = require("./production-messaging");
+const { createProductionMessagingProvider, createMessagingGovernance, retryDelayMs } = require("./production-messaging");
 
 function repos() {
   const rows = new Map();
@@ -24,14 +20,9 @@ test("messaging provider fails closed without adapter", () => {
 
 test("provider sends only approved channel and scoped fields", async () => {
   let seen;
-  const p = createProductionMessagingProvider({
-    env: {},
-    provider: {
-      id: "p",
-      send: async (x) => (seen = x, { id: "pm1" }),
-      verifyWebhook: async () => ({ verified: true })
-    }
-  });
+  const p = createProductionMessagingProvider({ env: {}, provider: {
+    id: "p", send: async (x) => (seen = x, { id: "pm1" }), verifyWebhook: async () => ({ verified: true })
+  }});
   await p.send({ channel: "email", recipientRef: "r", body: "hello", idempotencyKey: "k", metadata: { x: 1 } });
   assert.equal(seen.channel, "email");
   assert.equal(seen.body, "hello");
@@ -42,14 +33,9 @@ test("provider sends only approved channel and scoped fields", async () => {
 
 test("provider requires webhook signature before verification", async () => {
   let called = false;
-  const p = createProductionMessagingProvider({
-    env: {},
-    provider: {
-      id: "p",
-      send: async () => ({ id: "pm1" }),
-      verifyWebhook: async () => (called = true, { verified: true })
-    }
-  });
+  const p = createProductionMessagingProvider({ env: {}, provider: {
+    id: "p", send: async () => ({ id: "pm1" }), verifyWebhook: async () => (called = true, { verified: true })
+  }});
   await assert.rejects(() => p.verifyWebhook({}), /Webhook signature is required/);
   assert.equal(called, false);
   assert.deepEqual(await p.verifyWebhook({ signature: "sig", rawBody: "{}" }), { verified: true });
@@ -61,13 +47,11 @@ test("queue is matter-authorized and idempotent", async () => {
   const audit = [];
   const g = createMessagingGovernance({
     messageRepository: r,
-    matterAuthorization: {
-      assert: async (actor, matterId, action) => {
-        assert.equal(actor.id, "u1");
-        assert.equal(action, "update");
-        if (matterId !== "m1") throw new Error("denied");
-      }
-    },
+    matterAuthorization: { assert: async (actor, matterId, action) => {
+      assert.equal(actor.id, "u1");
+      assert.equal(action, "update");
+      if (matterId !== "m1") throw new Error("denied");
+    }},
     audit: { append: async (e) => audit.push(e) },
     clock: () => new Date("2026-01-01T00:00:00Z")
   });
@@ -84,12 +68,7 @@ test("queue is matter-authorized and idempotent", async () => {
 test("delivery state machine rejects invalid transitions and audits", async () => {
   const r = repos();
   const audit = [];
-  const g = createMessagingGovernance({
-    messageRepository: r,
-    matterAuthorization: { assert: async () => {} },
-    audit: { append: async (e) => audit.push(e) },
-    clock: () => new Date("2026-01-01T00:00:00Z")
-  });
+  const g = createMessagingGovernance({ messageRepository: r, matterAuthorization: { assert: async () => {} }, audit: { append: async (e) => audit.push(e) }, clock: () => new Date("2026-01-01T00:00:00Z") });
   await g.enqueue({ id: "x", matterId: "m", channel: "email", provider: "p", recipientRef: "r", idempotencyKey: "k", actor: { id: "u" } });
   await assert.rejects(() => g.transition({ id: "x", status: "delivered", actor: { id: "u" } }), /Invalid message transition/);
   await g.transition({ id: "x", status: "sending", actor: { id: "u" } });
@@ -103,21 +82,9 @@ test("delivery state machine rejects invalid transitions and audits", async () =
 test("delivery provider failure schedules bounded exponential retry without leaking PII to audit", async () => {
   const r = repos();
   const audit = [];
-  const g = createMessagingGovernance({
-    messageRepository: r,
-    matterAuthorization: { assert: async () => {} },
-    audit: { append: async (e) => audit.push(e) },
-    clock: () => new Date("2026-01-01T00:00:00Z"),
-    maxAttempts: 3,
-    retryBaseMs: 1000,
-    retryMaxMs: 2500
-  });
+  const g = createMessagingGovernance({ messageRepository: r, matterAuthorization: { assert: async () => {} }, audit: { append: async (e) => audit.push(e) }, clock: () => new Date("2026-01-01T00:00:00Z"), maxAttempts: 3, retryBaseMs: 1000, retryMaxMs: 2500 });
   await g.enqueue({ id: "retry-1", matterId: "m", channel: "email", provider: "p", recipientRef: "PII-EMAIL-REF", idempotencyKey: "retry-key", actor: { id: "u" }, payload: { body: "private body" } });
-  const failed = await g.deliver({
-    id: "retry-1",
-    actor: { id: "u" },
-    deliveryProvider: { send: async () => { throw new Error("provider unavailable"); } }
-  });
+  const failed = await g.deliver({ id: "retry-1", actor: { id: "u" }, deliveryProvider: { send: async () => { throw new Error("provider unavailable"); } } });
   assert.equal(failed.status, "failed");
   assert.equal(failed.attemptCount, 1);
   assert.equal(failed.nextRetryAt, "2026-01-01T00:00:01.000Z");
@@ -129,13 +96,7 @@ test("delivery provider failure schedules bounded exponential retry without leak
 test("retry is due-gated and resets failure metadata", async () => {
   const r = repos();
   let now = new Date("2026-01-01T00:00:00Z");
-  const g = createMessagingGovernance({
-    messageRepository: r,
-    matterAuthorization: { assert: async () => {} },
-    clock: () => now,
-    retryBaseMs: 1000,
-    retryMaxMs: 5000
-  });
+  const g = createMessagingGovernance({ messageRepository: r, matterAuthorization: { assert: async () => {} }, clock: () => now, retryBaseMs: 1000, retryMaxMs: 5000 });
   await g.enqueue({ id: "retry-2", matterId: "m", channel: "whatsapp", provider: "p", recipientRef: "r", idempotencyKey: "k2", actor: { id: "u" } });
   await g.transition({ id: "retry-2", status: "sending", actor: { id: "u" } });
   const failed = await g.transition({ id: "retry-2", status: "failed", actor: { id: "u" }, failureReason: "temporary" });
@@ -151,18 +112,18 @@ test("retry is due-gated and resets failure metadata", async () => {
 test("verified webhook updates only the message bound to the verified provider id", async () => {
   const r = repos();
   const audit = [];
+  let webhookPhase = false;
   const g = createMessagingGovernance({
     messageRepository: r,
-    matterAuthorization: { assert: async () => { throw new Error("must not be called for verified provider callback"); } },
+    matterAuthorization: { assert: async () => { if (webhookPhase) throw new Error("must not be called for verified provider callback"); } },
     audit: { append: async (e) => audit.push(e) },
-    provider: {
-      verifyWebhook: async (input) => input.signature === "good" ? { verified: true, providerMessageId: "pm-7", status: "delivered" } : { verified: false }
-    }
+    provider: { verifyWebhook: async (input) => input.signature === "good" ? { verified: true, providerMessageId: "pm-7", status: "delivered" } : { verified: false } }
   });
   await g.enqueue({ id: "webhook-1", matterId: "m", channel: "email", provider: "p", recipientRef: "r", idempotencyKey: "wk", actor: { id: "u" } });
   await g.transition({ id: "webhook-1", status: "sending", actor: { id: "u" } });
   await g.transition({ id: "webhook-1", status: "sent", actor: { id: "u" }, providerMessageId: "pm-7" });
   await assert.rejects(() => g.handleWebhook({ input: { signature: "bad" } }), /verification failed/);
+  webhookPhase = true;
   const delivered = await g.handleWebhook({ input: { signature: "good" } });
   assert.equal(delivered.status, "delivered");
   assert.equal(delivered.providerMessageId, "pm-7");
@@ -170,9 +131,6 @@ test("verified webhook updates only the message bound to the verified provider i
 });
 
 test("webhook cannot fabricate a non-delivery state", async () => {
-  const g = createMessagingGovernance({
-    messageRepository: repos(),
-    provider: { verifyWebhook: async () => ({ verified: true, providerMessageId: "pm", status: "queued" }) }
-  });
+  const g = createMessagingGovernance({ messageRepository: repos(), provider: { verifyWebhook: async () => ({ verified: true, providerMessageId: "pm", status: "queued" }) } });
   await assert.rejects(() => g.handleWebhook({ input: { signature: "good" } }), /Unsupported verified webhook status/);
 });
