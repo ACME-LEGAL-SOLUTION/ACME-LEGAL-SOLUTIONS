@@ -25,6 +25,14 @@
       "checksumAlgorithm": "git-blob-sha1",
       "checksum": "016e9932bacaf44a627f5edc1dab3087f4ac958f",
       "rollback": "provider-specific-before-production-approval"
+    },
+    {
+      "version": "004_payment_governance",
+      "file": "api/persistence/migrations/004_payment_governance.sql",
+      "schema": "api/persistence/schema/004_payment_governance.sql",
+      "checksumAlgorithm": "git-blob-sha1",
+      "checksum": "8bacc23b41468bfbc2453f10d3ea138bc71ec047",
+      "rollback": "provider-specific-before-production-approval"
     }
   ],
   "policy": {
