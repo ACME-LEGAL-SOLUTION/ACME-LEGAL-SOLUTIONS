@@ -26,28 +26,29 @@ test("production bootstrap fails closed without an AI provider", async () => {
 });
 
 test("production bootstrap fails closed without an identity adapter", async () => {
-  await assert.rejects(() => createApplicationBootstrap({
-    env: { ACME_ENV: "production", ACME_AI_PROVIDER_MODULE: "provider" },
-    aiProviderFactory: () => ({ execute: async () => ({ answer: "draft" }) }),
-    productionPersistenceFactory: () => { throw new Error("should not be called"); }
-  }).start(), /ACME_AUTH_MODULE/);
+  await assert.rejects(() => createApplicationBootstrap({ env: { ACME_ENV: "production", ACME_AI_PROVIDER_MODULE: "provider" }, aiProviderFactory: () => ({ execute: async () => ({ answer: "draft" }) }), productionPersistenceFactory: () => { throw new Error("should not be called"); } }).start(), /ACME_AUTH_MODULE/);
 });
 
-test("production bootstrap runs migrations before exposing the application and carries identity adapter", async () => {
+test("production bootstrap fails closed without object storage", async () => {
+  await assert.rejects(() => createApplicationBootstrap({ env: { ACME_ENV: "production", ACME_OBJECT_STORAGE_MODULE: undefined }, provider: { execute: async () => ({ answer: "draft" }) }, authenticate: async () => ({ id: "u-1", role: "professional", human: true }), productionPersistenceFactory: () => { throw new Error("should not be called"); } }).start(), /ACME_OBJECT_STORAGE_MODULE/);
+});
+
+test("production bootstrap runs migrations before exposing application and carries production adapters", async () => {
   const persistence = fakePersistence();
   const authenticate = async () => ({ id: "u-1", role: "professional", human: true });
+  const provider = { id: "provider-1", execute: async () => ({ answer: "draft" }) };
+  const objectStorage = { put: async () => {}, get: async () => {}, delete: async () => {} };
   const result = await createApplicationBootstrap({
     env: { ACME_ENV: "production", ACME_DB_PROVIDER: "sqlite", ACME_DB_URL: "file:///tmp/acme-test.db", ACME_DB_SSL: "false" },
-    provider: { execute: async () => ({ answer: "draft" }) },
-    authenticate,
+    provider, authenticate, objectStorage,
     productionPersistenceFactory: () => persistence,
-    applicationRuntimeFactory: ({ repositories }) => ({ repositories }),
-    migrationManifest: { migrationTable: "acme_migrations", migrations: [] },
-    rootDir: process.cwd()
+    applicationRuntimeFactory: ({ repositories, provider: wiredProvider, objectStorage: wiredStorage }) => ({ repositories, provider: wiredProvider, objectStorage: wiredStorage }),
+    migrationManifest: { migrationTable: "acme_migrations", migrations: [] }, rootDir: process.cwd()
   }).start();
   assert.ok(result.migrationRunner);
   assert.equal(result.application.repositories, persistence.repositories);
   assert.equal(result.authenticate, authenticate);
-  assert.equal(result.provider.id, undefined);
+  assert.equal(result.provider, provider);
+  assert.equal(result.objectStorage, objectStorage);
   await result.close();
 });
