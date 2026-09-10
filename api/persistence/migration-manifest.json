@@ -9,6 +9,14 @@
       "checksumAlgorithm": "git-blob-sha1",
       "checksum": "8c18885822a0f959128487d093daa1eb3588b290",
       "rollback": "provider-specific-before-production-approval"
+    },
+    {
+      "version": "002_work_packages",
+      "file": "api/persistence/migrations/002_work_packages.sql",
+      "schema": "api/persistence/schema/002_work_packages.sql",
+      "checksumAlgorithm": "git-blob-sha1",
+      "checksum": "b5f35bc120a42982014913234e971a11e3600be9",
+      "rollback": "provider-specific-before-production-approval"
     }
   ],
   "policy": {
