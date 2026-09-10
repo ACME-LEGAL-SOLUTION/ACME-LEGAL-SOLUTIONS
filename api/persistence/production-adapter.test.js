@@ -6,7 +6,7 @@ const { createProductionAdapter } = require("./production-adapter");
 function config(provider = "postgresql") { return createProductionPersistenceConfig({ env: { ACME_ENV: "production", ACME_DB_PROVIDER: provider, ACME_DB_URL: `${provider}://db.example/acme` } }); }
 function repositoryStub() { return { create: async (value) => value, getById: async () => null, list: async () => [], update: async (value) => value }; }
 function repositories() {
-  const collections = ["clients", "matters", "relationships", "parties", "conflicts", "documents", "evidence", "aiInteractions", "reviews", "audit", "sources", "legalVersions", "authorities", "diary", "hearings", "invoices", "payments", "partners", "workPackages"];
+  const collections = ["clients", "matters", "relationships", "parties", "conflicts", "documents", "evidence", "aiInteractions", "reviews", "audit", "sources", "legalVersions", "authorities", "diary", "hearings", "invoices", "payments", "partners", "workPackages", "messages"];
   const result = Object.fromEntries(collections.map((name) => [name, repositoryStub()]));
   result.matters.transition = async (value) => value;
   result.auditService = { append: async (event) => event };
