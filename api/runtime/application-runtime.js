@@ -2,6 +2,7 @@
 
 const { createRuntime } = require("./index");
 const { createAIGateway } = require("./ai-gateway-runtime");
+const { SPECIALIST_ROLES, createSpecialistAgent } = require("./specialist-agent");
 const { createSourceService } = require("./source-service");
 const { createLegalVersionService } = require("./legal-version-service");
 const { createAuthorityService } = require("./authority-service");
@@ -28,9 +29,10 @@ function createApplicationRuntime({ repositories, provider, clock = () => new Da
   const evidence = createEvidenceService({ repositories, clock });
   const intake = createIntakeService({ repositories, clock, conflictCheck });
   const consultation = createConsultationService({ intake, clock });
-  const ai = createAIGateway({ repositories, provider, clock });
+  const specialists = Object.freeze(Object.fromEntries(SPECIALIST_ROLES.map((role) => [role, createSpecialistAgent({ role, provider, clock })])));
+  const ai = createAIGateway({ repositories, provider, specialistAgent: specialists.legal_research, clock });
   return Object.freeze({
-    runtime, crm, intake, consultation, party, relationship, conflict, document, evidence, ai,
+    runtime, crm, intake, consultation, party, relationship, conflict, document, evidence, ai, specialists,
     reviews: ai.governance.reviews,
     source: createSourceService({ repository: repositories.sources, clock }),
     legalVersions: createLegalVersionService({ repository: repositories.legalVersions, clock }),
