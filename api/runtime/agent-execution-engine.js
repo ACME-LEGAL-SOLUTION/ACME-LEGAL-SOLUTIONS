@@ -31,7 +31,7 @@ function normalizeTools(tools) {
   });
 }
 
-function validateResult(result, requestId) {
+function validateResult(result, requestId, maxOutputBytes = Infinity) {
   if (!isPlainObject(result)) throw new TypeError("Agent result must be a plain object");
   for (const key of REQUIRED_RESULT_KEYS) if (!(key in result)) throw new TypeError(`Agent result field is required: ${key}`);
   if (!STATUSES.includes(result.status)) throw new TypeError(`Invalid agent result status: ${result.status}`);
@@ -39,9 +39,12 @@ function validateResult(result, requestId) {
   if (typeof result.provenance.requestId !== "string" || result.provenance.requestId !== requestId) {
     throw new TypeError("Agent result provenance must bind to the execution request");
   }
+  const output = result.output ?? null;
+  const outputBytes = Buffer.byteLength(JSON.stringify(output), "utf8");
+  if (outputBytes > maxOutputBytes) throw new Error("Agent output exceeds configured limit");
   return Object.freeze({
     status: result.status,
-    output: result.output ?? null,
+    output,
     provenance: Object.freeze({ ...result.provenance })
   });
 }
@@ -90,7 +93,7 @@ function createAgentExecutionEngine({ registry, authorizeMatter, authorizeTools,
       const input = Object.freeze({ requestId, taskId: task.taskId, matterId: task.matterId, actor: Object.freeze({ ...task.actor }), agent, input: task.input, tools: Object.freeze([...tools]), context: task.context || {} });
       try {
         const raw = await withTimeout(Promise.resolve().then(() => execute(input)), agent.limits.timeoutMs, requestId);
-        const result = validateResult(raw, requestId);
+        const result = validateResult(raw, requestId, agent.limits.maxOutputBytes);
         const event = Object.freeze({ requestId, taskId: task.taskId, agentId: agent.id, agentVersion: agent.version, matterId: task.matterId, status: result.status, startedAt, completedAt: clock() });
         await provenance(event, result);
         await audit(event);
