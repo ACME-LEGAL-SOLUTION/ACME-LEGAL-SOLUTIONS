@@ -82,6 +82,44 @@ test("HTTP application routes matter-domain writes through persistent scoped ope
   assert.equal(calls.every(([, value]) => value.matterId === "matter-1"), true);
 });
 
+test("HTTP matter lifecycle transition enforces the governed state machine and human gate", async (t) => {
+  const repositories = createApplicationRepositories();
+  const application = createApplicationRuntime({ repositories, provider: { execute: async () => ({ answer: "draft" }) } });
+  const actor = { id: "professional-lifecycle", roles: ["professional"] };
+  const server = await running(application, async () => actor); t.after(() => server.close());
+
+  const created = await request(server, { method: "POST", path: "/api/matters", body: { title: "Lifecycle Matter" } });
+  assert.equal(created.status, 200);
+  assert.equal(created.body.status, "lead");
+
+  const verified = await request(server, { method: "POST", path: "/api/matters/transition", body: { matterId: created.body.id, nextStatus: "verified" } });
+  assert.equal(verified.status, 200);
+  assert.equal(verified.body.status, "verified");
+
+  const blocked = await request(server, { method: "POST", path: "/api/matters/transition", body: { matterId: created.body.id, nextStatus: "resolved" } });
+  assert.equal(blocked.status, 400);
+  assert.match(blocked.body.error, /Invalid matter transition/);
+});
+
+test("HTTP matter lifecycle transition preserves human approval gate at final states", async (t) => {
+  const repositories = createApplicationRepositories();
+  const application = createApplicationRuntime({ repositories, provider: { execute: async () => ({ answer: "draft" }) } });
+  const actor = { id: "professional-approval", roles: ["professional"] };
+  const server = await running(application, async () => actor); t.after(() => server.close());
+  const created = await request(server, { method: "POST", path: "/api/matters", body: { title: "Approval Matter" } });
+  assert.equal(created.status, 200);
+  for (const nextStatus of ["verified", "conflict_check", "matter_open", "active", "review"]) {
+    const result = await request(server, { method: "POST", path: "/api/matters/transition", body: { matterId: created.body.id, nextStatus } });
+    assert.equal(result.status, 200);
+  }
+  const blocked = await request(server, { method: "POST", path: "/api/matters/transition", body: { matterId: created.body.id, nextStatus: "resolved" } });
+  assert.equal(blocked.status, 500);
+  assert.match(blocked.body.error, /Human review and approval are required/);
+  const approved = await request(server, { method: "POST", path: "/api/matters/transition", body: { matterId: created.body.id, nextStatus: "resolved", review: { approved: true } } });
+  assert.equal(approved.status, 200);
+  assert.equal(approved.body.status, "resolved");
+});
+
 test("HTTP server enforces authentication on non-public routes", async (t) => {
   const server = await running(); t.after(() => server.close());
   const result = await request(server, { method: "POST", path: "/api/clients", body: { name: "Blocked" } });
