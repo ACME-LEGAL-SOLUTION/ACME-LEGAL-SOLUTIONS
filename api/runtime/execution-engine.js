@@ -57,37 +57,82 @@ function createExecutionEngine({ registry, authorize, execute, recordProvenance,
         }, request.limits.timeoutMs);
       });
       const rawResult = await Promise.race([execution, timeout]);
+
       let result;
       try {
         result = normalizeExecutionResult({ ...rawResult, taskId: request.taskId, agentId: request.agentId });
       } catch (error) {
-        return finalize(request, { status: "failed", taskId: request.taskId, agentId: request.agentId, evidence: [], uncertainty: [], failure: { code: "malformed_result", message: error.message } }, start);
+        return finalize(request, {
+          status: "failed",
+          taskId: request.taskId,
+          agentId: request.agentId,
+          evidence: [],
+          uncertainty: [],
+          failure: { code: "malformed_result", message: error.message }
+        }, start);
       }
+
       if (result.output !== undefined && byteLength(result.output) > request.limits.maxOutputBytes) {
-        return finalize(request, { status: "failed", taskId: request.taskId, agentId: request.agentId, evidence: result.evidence, uncertainty: result.uncertainty, failure: { code: "output_limit_exceeded", message: "Output exceeds execution limit" } }, start);
+        return finalize(request, {
+          status: "failed",
+          taskId: request.taskId,
+          agentId: request.agentId,
+          evidence: result.evidence,
+          uncertainty: result.uncertainty,
+          failure: { code: "output_limit_exceeded", message: "Output exceeds execution limit" }
+        }, start);
       }
       return finalize(request, result, start);
     } catch (error) {
-      const code = error.code === "execution_timeout" ? "timed_out" : "failed";
-      return finalize(request, { status: code === "timed_out" ? "timed_out" : "failed", taskId: request.taskId, agentId: request.agentId, evidence: [], uncertainty: [], failure: { code: error.code || "execution_error", message: error.message } }, start);
+      const status = error.code === "execution_timeout" ? "timed_out" : "failed";
+      return finalize(request, {
+        status,
+        taskId: request.taskId,
+        agentId: request.agentId,
+        evidence: [],
+        uncertainty: [],
+        failure: { code: error.code || "execution_error", message: error.message }
+      }, start);
     } finally {
       clearTimeout(timer);
     }
   }
 
   async function governBlocked(rawRequest, code, message) {
-    const request = rawRequest && typeof rawRequest === "object" && typeof rawRequest.taskId === "string" && typeof rawRequest.agentId === "string" ? rawRequest : { taskId: "unknown-task", agentId: "unknown-agent" };
-    return finalize(request, { taskId: request.taskId, agentId: request.agentId, status: "blocked", evidence: [], uncertainty: [], failure: { code, message } }, clock());
+    const request = rawRequest && typeof rawRequest === "object" && typeof rawRequest.taskId === "string" && typeof rawRequest.agentId === "string"
+      ? rawRequest
+      : { taskId: "unknown-task", agentId: "unknown-agent" };
+    return finalize(request, {
+      taskId: request.taskId,
+      agentId: request.agentId,
+      status: "blocked",
+      evidence: [],
+      uncertainty: [],
+      failure: { code, message }
+    }, clock());
   }
 
   async function finalize(request, result, startedAt) {
-    const event = { taskId: request.taskId, agentId: request.agentId, status: result.status, startedAt, completedAt: clock() };
+    const event = {
+      taskId: request.taskId,
+      agentId: request.agentId,
+      status: result.status,
+      startedAt,
+      completedAt: clock()
+    };
     try {
       const provenanceEventId = await recordProvenance({ request, result, event });
       const auditEventId = await recordAudit({ request, result, event });
       return Object.freeze({ ...result, provenanceEventId, auditEventId });
     } catch (error) {
-      return Object.freeze({ taskId: request.taskId, agentId: request.agentId, status: "failed", evidence: result.evidence || [], uncertainty: result.uncertainty || [], failure: { code: "governance_recording_failed", message: error.message } });
+      return Object.freeze({
+        taskId: request.taskId,
+        agentId: request.agentId,
+        status: "failed",
+        evidence: result.evidence || [],
+        uncertainty: result.uncertainty || [],
+        failure: { code: "governance_recording_failed", message: error.message }
+      });
     }
   }
 
