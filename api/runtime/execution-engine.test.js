@@ -29,16 +29,14 @@ function request(overrides = {}) {
   };
 }
 
-function engine(execute) {
+function makeEngine(execute, authorize = async () => ({ allowed: true, humanApprovalGranted: true })) {
   const registry = createAgentRegistry();
   registry.register(definition);
   const events = { provenance: [], audit: [] };
   return {
     events,
     engine: createExecutionEngine({
-      registry,
-      authorize: async () => ({ allowed: true, humanApprovalGranted: true }),
-      execute,
+      registry, authorize, execute,
       recordProvenance: async (event) => { events.provenance.push(event); return `prov-${events.provenance.length}`; },
       recordAudit: async (event) => { events.audit.push(event); return `audit-${events.audit.length}`; }
     })
@@ -46,7 +44,7 @@ function engine(execute) {
 }
 
 test("executes only after independent authorization and declarations", async () => {
-  const { engine, events } = engine(async () => ({ status: "succeeded", output: { answer: "ok" }, evidence: [], uncertainty: [] }));
+  const { engine, events } = makeEngine(async () => ({ status: "succeeded", output: { answer: "ok" }, evidence: [], uncertainty: [] }));
   const result = await engine.run(request());
   assert.equal(result.status, "succeeded");
   assert.equal(result.provenanceEventId, "prov-1");
@@ -54,27 +52,21 @@ test("executes only after independent authorization and declarations", async () 
 });
 
 test("blocks undeclared tool", async () => {
-  const { engine } = engine(async () => { throw new Error("must not execute"); });
+  const { engine } = makeEngine(async () => { throw new Error("must not execute"); });
   const result = await engine.run(request({ requestedTools: ["admin-tool"] }));
   assert.equal(result.status, "blocked");
   assert.equal(result.failure.code, "tool_not_declared");
 });
 
 test("blocks missing human approval", async () => {
-  const registry = createAgentRegistry(); registry.register(definition);
-  const { engine } = (() => {
-    const events = { provenance: [], audit: [] };
-    return { engine: createExecutionEngine({ registry, authorize: async () => ({ allowed: true, humanApprovalGranted: false }), execute: async () => { throw new Error("must not execute"); }, recordProvenance: async () => "p", recordAudit: async () => "a" }) };
-  })();
+  const { engine } = makeEngine(async () => { throw new Error("must not execute"); }, async () => ({ allowed: true, humanApprovalGranted: false }));
   const result = await engine.run(request());
   assert.equal(result.status, "blocked");
   assert.equal(result.failure.code, "human_approval_required");
 });
 
 test("times out and aborts execution", async () => {
-  const { engine, events } = engine(({ signal }) => new Promise((resolve) => {
-    signal.addEventListener("abort", () => resolve({ status: "cancelled", failure: { code: "aborted", message: "aborted" }, evidence: [], uncertainty: [] }), { once: true });
-  }));
+  const { engine, events } = makeEngine(({ signal }) => new Promise((resolve) => signal.addEventListener("abort", () => resolve({ status: "cancelled", failure: { code: "aborted", message: "aborted" }, evidence: [], uncertainty: [] }), { once: true })));
   const result = await engine.run(request({ limits: { maxInputBytes: 4096, maxOutputBytes: 4096, timeoutMs: 10 } }));
   assert.equal(result.status, "timed_out");
   assert.equal(events.provenance.length, 1);
@@ -82,21 +74,21 @@ test("times out and aborts execution", async () => {
 });
 
 test("fails closed on malformed agent result", async () => {
-  const { engine } = engine(async () => ({ status: "succeeded", evidence: [], uncertainty: [] }));
+  const { engine } = makeEngine(async () => ({ status: "succeeded", evidence: [], uncertainty: [] }));
   const result = await engine.run(request());
   assert.equal(result.status, "failed");
   assert.equal(result.failure.code, "malformed_result");
 });
 
 test("blocks requests that exceed registered agent limits", async () => {
-  const { engine } = engine(async () => { throw new Error("must not execute"); });
+  const { engine } = makeEngine(async () => { throw new Error("must not execute"); });
   const result = await engine.run(request({ limits: { maxInputBytes: 8192, maxOutputBytes: 4096, timeoutMs: 100 } }));
   assert.equal(result.status, "blocked");
   assert.equal(result.failure.code, "execution_limit_exceeded");
 });
 
 test("records blocked outcomes for audit and provenance", async () => {
-  const { engine, events } = engine(async () => { throw new Error("must not execute"); });
+  const { engine, events } = makeEngine(async () => { throw new Error("must not execute"); });
   const result = await engine.run(request({ requestedCapabilities: ["undeclared"] }));
   assert.equal(result.status, "blocked");
   assert.equal(events.provenance.length, 1);
