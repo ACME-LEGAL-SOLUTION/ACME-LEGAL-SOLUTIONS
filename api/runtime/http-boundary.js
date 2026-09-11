@@ -4,6 +4,7 @@ const ROUTES = Object.freeze({
   "/api/consultations": "consultation",
   "/api/clients": "crm",
   "/api/matters": "crm",
+  "/api/matters/transition": "crm",
   "/api/parties": "party",
   "/api/relationships": "relationship",
   "/api/conflicts": "conflict",
