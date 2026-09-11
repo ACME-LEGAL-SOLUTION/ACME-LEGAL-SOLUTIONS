@@ -73,7 +73,7 @@ try {
         throw 'pg_dump reported success but did not create the temporary backup file.'
     }
 
-    & $pgRestore '--list' '--file', $tempPath
+    & $pgRestore '--list' $tempPath
     if ($LASTEXITCODE -ne 0) {
         throw "pg_restore verification failed with exit code $LASTEXITCODE."
     }

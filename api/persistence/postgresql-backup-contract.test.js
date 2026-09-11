@@ -9,7 +9,8 @@ const script = fs.readFileSync(scriptPath, 'utf8');
 test('PostgreSQL backup runner preserves the production backup contract', () => {
   assert.match(script, /--format=custom/);
   assert.match(script, /--no-password/);
-  assert.match(script, /pg_restore.*--list/);
+  assert.match(script, /& \$pgRestore '--list' \$tempPath/);
+  assert.doesNotMatch(script, /& \$pgRestore '--list' '--file', \$tempPath/);
   assert.match(script, /Get-FileHash.*SHA256/);
   assert.match(script, /credentialsRecorded\s*=\s*\$false/);
   assert.match(script, /Refusing to overwrite existing backup/);
