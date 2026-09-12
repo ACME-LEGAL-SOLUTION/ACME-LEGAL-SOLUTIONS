@@ -37,9 +37,11 @@ function Invoke-LocalHealth {
 
 function Get-TaskServerPath($Task) {
     if (-not $Task) { return $null }
-    $taskInfo = $Task | Get-ScheduledTaskInfo
-    $definition = [xml]$Task.Xml
-    return $definition.Task.Actions.Exec.Arguments
+    $actions = @($Task.Actions)
+    if ($actions.Count -eq 0) { return $null }
+    $execAction = $actions | Where-Object { $_.CimClass.CimClassName -eq 'MSFT_TaskExecAction' } | Select-Object -First 1
+    if (-not $execAction) { return $null }
+    return [string]$execAction.Arguments
 }
 
 Assert-Command 'node'
@@ -86,13 +88,12 @@ switch ($Action) {
 
         $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
         if (-not $task) {
-            throw "Production task '$TaskName' is not configured. Run deploy\\configure-production-host.ps1 once from an elevated Administrator PowerShell before deploying."
+            throw "Production task '$TaskName' is not configured. Run deploy\configure-production-host.ps1 once from an elevated Administrator PowerShell before deploying."
         }
 
-        $taskXml = [xml]$task.Xml
-        $taskArguments = [string]$taskXml.Task.Actions.Exec.Arguments
-        if ($taskArguments -notlike "*$CurrentServer*") {
-            throw "Production task '$TaskName' is not configured for the stable release path '$CurrentServer'. Re-run deploy\\configure-production-host.ps1 as Administrator."
+        $taskArguments = Get-TaskServerPath $task
+        if ([string]::IsNullOrWhiteSpace($taskArguments) -or $taskArguments -notlike "*$CurrentServer*") {
+            throw "Production task '$TaskName' is not configured for the stable release path '$CurrentServer'. Re-run deploy\configure-production-host.ps1 as Administrator."
         }
 
         Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
