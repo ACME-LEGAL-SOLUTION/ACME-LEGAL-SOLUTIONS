@@ -46,9 +46,6 @@ Register-ScheduledTask -TaskName $TaskName -Action $taskAction -Trigger $trigger
 
 # NTFS access is necessary, but it is not sufficient for a task created by an
 # Administrator. Task Scheduler also enforces the registered task's own DACL.
-# Grant Network Service full control of this one task only. The task continues
-# to execute its Node action as SYSTEM; the runner only gains control of this
-# named task, not Administrator membership on the host.
 $taskFile = Join-Path $env:WINDIR "System32\Tasks\$TaskName"
 if (-not (Test-Path -LiteralPath $taskFile)) {
     throw "Registered task file was not found: $taskFile"
@@ -58,12 +55,10 @@ if ($LASTEXITCODE -ne 0) {
     throw "Failed to grant Network Service control of scheduled task file. icacls exit code: $LASTEXITCODE"
 }
 
-# Use the Task Scheduler COM API with the root folder path that PowerShell's
-# Task Scheduler provider exposes. The COM API expects the folder path as '/'
-# rather than a doubled backslash produced by a PowerShell-escaped string.
 $taskService = New-Object -ComObject 'Schedule.Service'
 $taskService.Connect()
-$taskFolder = $taskService.GetFolder('/')
+# Microsoft Task Scheduler COM specifies the root task folder as a single backslash.
+$taskFolder = $taskService.GetFolder('\')
 $registeredTask = $taskFolder.GetTask($TaskName)
 $currentSddl = [string]$registeredTask.GetSecurityDescriptor(0xF)
 
