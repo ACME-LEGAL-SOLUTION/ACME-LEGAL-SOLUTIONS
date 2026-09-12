@@ -52,11 +52,11 @@ switch ($Action) {
         $node = (Get-Command node).Source
         $server = Join-Path $AppRoot 'api\runtime\http-server.js'
         $working = $AppRoot
-        $action = New-ScheduledTaskAction -Execute $node -Argument "`"$server`"" -WorkingDirectory $working
+        $taskAction = New-ScheduledTaskAction -Execute $node -Argument "`"$server`"" -WorkingDirectory $working
         $trigger = New-ScheduledTaskTrigger -AtStartup
         $settings = New-ScheduledTaskSettingsSet -RestartCount 5 -RestartInterval (New-TimeSpan -Minutes 1) -StartWhenAvailable
         $principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
-        Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Force | Out-Null
+        Register-ScheduledTask -TaskName $TaskName -Action $taskAction -Trigger $trigger -Settings $settings -Principal $principal -Force | Out-Null
         Write-Output "TASK_CONFIGURED=$TaskName"
         Write-Output "GIT_SHA=$gitSha"
         break
