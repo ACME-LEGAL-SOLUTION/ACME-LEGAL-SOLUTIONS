@@ -31,13 +31,12 @@ jobs:
           fetch-depth: 1
 
       - name: Verify release SHA
-        shell: powershell
+        shell: cmd
         run: |
-          $sha = (git rev-parse HEAD).Trim()
-          if ($sha -notmatch '^[0-9a-f]{40}$') { throw 'Invalid release SHA.' }
-          Write-Host "Deploying release SHA: $sha"
+          for /f "delims=" %%S in ('git rev-parse HEAD') do set "SHA=%%S"
+          echo Deploying release SHA: %SHA%
+          echo %SHA%| findstr /r /x "[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]
 
       - name: Deploy and validate
-        shell: powershell
-        run: |
-          & .\deploy\self-host-deploy.ps1 -Action Deploy -AppRoot $PWD
+        shell: cmd
+        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\deploy\self-host-deploy.ps1 -Action Deploy -AppRoot "%GITHUB_WORKSPACE%"
