@@ -20,20 +20,51 @@ if ($sqlFiles.Count -eq 0) {
     throw 'No tracked SQL sources found.'
 }
 
-$crlfFiles = @()
+# The dedicated Windows runner can still materialize tracked LF blobs as CRLF
+# despite the repository EOL contract. Normalize the checkout in-place before
+# checksum validation so production validation is independent of runner EOL
+# configuration. Only CRLF is rewritten; all other bytes are preserved.
+$normalizedFiles = @()
+foreach ($relativePath in $sqlFiles) {
+    $fullPath = Join-Path $AppRoot $relativePath
+    $bytes = [System.IO.File]::ReadAllBytes($fullPath)
+    $hasCrlf = $false
+    for ($i = 0; $i -lt ($bytes.Length - 1); $i++) {
+        if ($bytes[$i] -eq 13 -and $bytes[$i + 1] -eq 10) {
+            $hasCrlf = $true
+            break
+        }
+    }
+
+    if ($hasCrlf) {
+        $normalized = New-Object System.Collections.Generic.List[byte]
+        for ($i = 0; $i -lt $bytes.Length; $i++) {
+            if ($bytes[$i] -eq 13 -and $i -lt ($bytes.Length - 1) -and $bytes[$i + 1] -eq 10) {
+                [void]$normalized.Add(10)
+                $i++
+            } else {
+                [void]$normalized.Add($bytes[$i])
+            }
+        }
+        [System.IO.File]::WriteAllBytes($fullPath, $normalized.ToArray())
+        $normalizedFiles += $relativePath
+    }
+}
+
+$remainingCrlfFiles = @()
 foreach ($relativePath in $sqlFiles) {
     $fullPath = Join-Path $AppRoot $relativePath
     $bytes = [System.IO.File]::ReadAllBytes($fullPath)
     for ($i = 0; $i -lt ($bytes.Length - 1); $i++) {
         if ($bytes[$i] -eq 13 -and $bytes[$i + 1] -eq 10) {
-            $crlfFiles += $relativePath
+            $remainingCrlfFiles += $relativePath
             break
         }
     }
 }
 
-if ($crlfFiles.Count -gt 0) {
-    throw ('SQL checkout contains CRLF line endings: ' + ($crlfFiles -join ', '))
+if ($remainingCrlfFiles.Count -gt 0) {
+    throw ('SQL checkout still contains CRLF line endings after canonicalization: ' + ($remainingCrlfFiles -join ', '))
 }
 
 $manifestPath = Join-Path $AppRoot 'api/persistence/migration-manifest.json'
@@ -61,4 +92,5 @@ foreach ($migration in $manifest.migrations) {
 git -C $AppRoot ls-files --eol '*.sql'
 Write-Output "SQL_PREFLIGHT=PASS"
 Write-Output "SQL_FILES=$($sqlFiles.Count)"
+Write-Output "SQL_NORMALIZED=$($normalizedFiles.Count)"
 Write-Output "MIGRATION_CHECKSUMS=PASS"
