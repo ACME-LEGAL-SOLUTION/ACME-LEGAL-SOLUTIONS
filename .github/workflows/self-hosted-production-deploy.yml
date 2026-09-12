@@ -29,11 +29,13 @@ jobs:
         with:
           ref: ${{ inputs.release_ref }}
           fetch-depth: 1
+          eol: lf
 
       - name: Normalize Git checkout for canonical checksums
         shell: cmd
         run: |
           git config core.autocrlf false
+          git config core.eol lf
           git reset --hard HEAD
 
       - name: Verify release SHA
