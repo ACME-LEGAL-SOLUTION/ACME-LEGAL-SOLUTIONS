@@ -58,9 +58,12 @@ if ($LASTEXITCODE -ne 0) {
     throw "Failed to grant Network Service control of scheduled task file. icacls exit code: $LASTEXITCODE"
 }
 
+# Use the Task Scheduler COM API with the root folder path that PowerShell's
+# Task Scheduler provider exposes. The COM API expects the folder path as '/'
+# rather than a doubled backslash produced by a PowerShell-escaped string.
 $taskService = New-Object -ComObject 'Schedule.Service'
 $taskService.Connect()
-$taskFolder = $taskService.GetFolder('\\')
+$taskFolder = $taskService.GetFolder('/')
 $registeredTask = $taskFolder.GetTask($TaskName)
 $currentSddl = [string]$registeredTask.GetSecurityDescriptor(0xF)
 
