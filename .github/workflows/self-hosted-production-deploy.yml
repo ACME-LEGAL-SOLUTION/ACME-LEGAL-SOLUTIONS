@@ -24,24 +24,34 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Configure Git checkout policy
-        shell: cmd
-        run: |
-          git config --global core.autocrlf false
-          git config --global core.eol lf
-
       - name: Checkout requested release
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.release_ref }}
           fetch-depth: 1
 
-      - name: Normalize Git checkout for canonical checksums
-        shell: cmd
+      - name: Normalize and verify canonical SQL checkout
+        shell: powershell
         run: |
-          git config core.autocrlf false
-          git config core.eol lf
           git reset --hard HEAD
+          $sqlFiles = @(git ls-files '*.sql')
+          if ($sqlFiles.Count -eq 0) { throw 'No tracked SQL sources found' }
+          $crlfFiles = @()
+          foreach ($relativePath in $sqlFiles) {
+            $fullPath = Join-Path $env:GITHUB_WORKSPACE $relativePath
+            $bytes = [System.IO.File]::ReadAllBytes($fullPath)
+            for ($i = 0; $i -lt ($bytes.Length - 1); $i++) {
+              if ($bytes[$i] -eq 13 -and $bytes[$i + 1] -eq 10) {
+                $crlfFiles += $relativePath
+                break
+              }
+            }
+          }
+          if ($crlfFiles.Count -gt 0) {
+            Write-Error ('SQL checkout contains CRLF line endings: ' + ($crlfFiles -join ', '))
+            exit 1
+          }
+          git ls-files --eol '*.sql'
 
       - name: Verify release SHA
         shell: cmd

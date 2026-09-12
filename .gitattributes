@@ -1,0 +1,2 @@
+# Keep canonical SQL sources byte-stable across Windows and Unix checkouts.
+*.sql text eol=lf
