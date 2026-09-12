@@ -30,28 +30,9 @@ jobs:
           ref: ${{ inputs.release_ref }}
           fetch-depth: 1
 
-      - name: Normalize and verify canonical SQL checkout
-        shell: powershell
-        run: |
-          git reset --hard HEAD
-          $sqlFiles = @(git ls-files '*.sql')
-          if ($sqlFiles.Count -eq 0) { throw 'No tracked SQL sources found' }
-          $crlfFiles = @()
-          foreach ($relativePath in $sqlFiles) {
-            $fullPath = Join-Path $env:GITHUB_WORKSPACE $relativePath
-            $bytes = [System.IO.File]::ReadAllBytes($fullPath)
-            for ($i = 0; $i -lt ($bytes.Length - 1); $i++) {
-              if ($bytes[$i] -eq 13 -and $bytes[$i + 1] -eq 10) {
-                $crlfFiles += $relativePath
-                break
-              }
-            }
-          }
-          if ($crlfFiles.Count -gt 0) {
-            Write-Error ('SQL checkout contains CRLF line endings: ' + ($crlfFiles -join ', '))
-            exit 1
-          }
-          git ls-files --eol '*.sql'
+      - name: Verify canonical SQL checkout
+        shell: cmd
+        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\deploy\verify-sql-checkout.ps1 -AppRoot "%GITHUB_WORKSPACE%"
 
       - name: Verify release SHA
         shell: cmd
