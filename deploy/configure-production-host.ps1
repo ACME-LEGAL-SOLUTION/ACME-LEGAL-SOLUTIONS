@@ -10,7 +10,7 @@ Set-StrictMode -Version Latest
 
 function Assert-Administrator {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
-    $principal = New-Object Security.Principal.WindowsPrincipal($identity)
+    $principal = New-Object System.Security.Principal.WindowsPrincipal($identity)
     if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
         throw 'This host configuration must be run from an elevated Administrator PowerShell.'
     }
@@ -44,7 +44,21 @@ $principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccou
 
 Register-ScheduledTask -TaskName $TaskName -Action $taskAction -Trigger $trigger -Settings $settings -Principal $principal -Force | Out-Null
 
+# The runner itself is Network Service. Windows Task Scheduler normally allows
+# Network Service to manage only tasks it created. This task is intentionally
+# created once by an elevated Administrator, so grant Network Service control
+# of this one task file without granting it Administrator rights on the host.
+$taskFile = Join-Path $env:WINDIR "System32\Tasks\$TaskName"
+if (-not (Test-Path -LiteralPath $taskFile)) {
+    throw "Registered task file was not found: $taskFile"
+}
+& icacls.exe $taskFile /grant 'NT AUTHORITY\NETWORK SERVICE:(F)' | Out-Host
+if ($LASTEXITCODE -ne 0) {
+    throw "Failed to grant Network Service control of scheduled task file. icacls exit code: $LASTEXITCODE"
+}
+
 Write-Output "HOST_CONFIGURED=$TaskName"
 Write-Output "DEPLOYMENT_ROOT=$DeploymentRoot"
 Write-Output "CURRENT_ROOT=$CurrentRoot"
+Write-Output "TASK_FILE=$taskFile"
 Write-Output "TASK_STATE=$((Get-ScheduledTask -TaskName $TaskName).State)"
