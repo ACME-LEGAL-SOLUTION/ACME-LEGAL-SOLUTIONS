@@ -24,12 +24,17 @@ jobs:
     timeout-minutes: 30
 
     steps:
+      - name: Configure Git checkout policy
+        shell: cmd
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+
       - name: Checkout requested release
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.release_ref }}
           fetch-depth: 1
-          eol: lf
 
       - name: Normalize Git checkout for canonical checksums
         shell: cmd
