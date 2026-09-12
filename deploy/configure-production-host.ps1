@@ -44,10 +44,11 @@ $principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccou
 
 Register-ScheduledTask -TaskName $TaskName -Action $taskAction -Trigger $trigger -Settings $settings -Principal $principal -Force | Out-Null
 
-# The runner itself is Network Service. Windows Task Scheduler normally allows
-# Network Service to manage only tasks it created. This task is intentionally
-# created once by an elevated Administrator, so grant Network Service control
-# of this one task file without granting it Administrator rights on the host.
+# NTFS access is necessary, but it is not sufficient for a task created by an
+# Administrator. Task Scheduler also enforces the registered task's own DACL.
+# Grant Network Service full control of this one task only. The task continues
+# to execute its Node action as SYSTEM; the runner only gains control of this
+# named task, not Administrator membership on the host.
 $taskFile = Join-Path $env:WINDIR "System32\Tasks\$TaskName"
 if (-not (Test-Path -LiteralPath $taskFile)) {
     throw "Registered task file was not found: $taskFile"
@@ -57,8 +58,32 @@ if ($LASTEXITCODE -ne 0) {
     throw "Failed to grant Network Service control of scheduled task file. icacls exit code: $LASTEXITCODE"
 }
 
+$taskService = New-Object -ComObject 'Schedule.Service'
+$taskService.Connect()
+$taskFolder = $taskService.GetFolder('\\')
+$registeredTask = $taskFolder.GetTask($TaskName)
+$currentSddl = [string]$registeredTask.GetSecurityDescriptor(0xF)
+
+if ($currentSddl -notmatch '\(A;;FA;;;NS\)') {
+    $updatedSddl = $currentSddl + '(A;;FA;;;NS)'
+    $registeredTask.SetSecurityDescriptor($updatedSddl, 0)
+}
+
+$verifiedSddl = [string]$registeredTask.GetSecurityDescriptor(0xF)
+if ($verifiedSddl -notmatch '\(A;;FA;;;NS\)') {
+    throw 'Task Scheduler security descriptor does not grant Network Service full control of the production task.'
+}
+
+# Verify the same API surface the runner uses, so host configuration fails now
+# instead of allowing a later deployment to discover a hidden task ACL issue.
+$verifiedTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+if (-not $verifiedTask) {
+    throw "Task Scheduler cannot enumerate configured task '$TaskName'."
+}
+
 Write-Output "HOST_CONFIGURED=$TaskName"
 Write-Output "DEPLOYMENT_ROOT=$DeploymentRoot"
 Write-Output "CURRENT_ROOT=$CurrentRoot"
 Write-Output "TASK_FILE=$taskFile"
-Write-Output "TASK_STATE=$((Get-ScheduledTask -TaskName $TaskName).State)"
+Write-Output "TASK_SDDL_NETWORK_SERVICE=FULL"
+Write-Output "TASK_STATE=$($verifiedTask.State)"
