@@ -89,6 +89,16 @@ foreach ($migration in $manifest.migrations) {
     }
 }
 
+# Canonicalization changes file contents after checkout, so refresh Git's
+# index/stat cache before the deployment script performs its clean-tree gate.
+# This does not stage or alter repository content; it only refreshes metadata.
+git -C $AppRoot update-index --refresh
+
+$dirty = @(git -C $AppRoot status --porcelain)
+if ($dirty.Count -gt 0) {
+    throw ('Canonical SQL preflight left unexpected working-tree changes: ' + ($dirty -join ' | '))
+}
+
 git -C $AppRoot ls-files --eol '*.sql'
 Write-Output "SQL_PREFLIGHT=PASS"
 Write-Output "SQL_FILES=$($sqlFiles.Count)"
