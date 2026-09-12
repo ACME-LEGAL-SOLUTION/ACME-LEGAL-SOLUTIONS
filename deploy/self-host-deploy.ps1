@@ -4,7 +4,8 @@ param(
     [string]$Action = 'HealthCheck',
     [string]$AppRoot = (Split-Path -Parent $PSScriptRoot),
     [string]$TaskName = 'ACME-Legal-API',
-    [int]$Port = 3000
+    [int]$Port = 3000,
+    [string]$DeploymentRoot = 'C:\ProgramData\ACME-Legal-Solutions'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -34,12 +35,24 @@ function Invoke-LocalHealth {
     Write-Output "READY=200"
 }
 
+function Get-TaskServerPath($Task) {
+    if (-not $Task) { return $null }
+    $taskInfo = $Task | Get-ScheduledTaskInfo
+    $definition = [xml]$Task.Xml
+    return $definition.Task.Actions.Exec.Arguments
+}
+
 Assert-Command 'node'
 Assert-Command 'npm'
 Assert-AppRoot
 
 $gitSha = (git -C $AppRoot rev-parse HEAD).Trim()
 if ($gitSha -notmatch '^[0-9a-f]{40}$') { throw 'Unable to resolve immutable Git SHA.' }
+
+$CurrentRoot = Join-Path $DeploymentRoot 'current'
+$ReleaseRoot = Join-Path (Join-Path $DeploymentRoot 'releases') $gitSha
+$ServerRelativePath = 'api\runtime\http-server.js'
+$CurrentServer = Join-Path $CurrentRoot $ServerRelativePath
 
 switch ($Action) {
     'HealthCheck' {
@@ -49,15 +62,17 @@ switch ($Action) {
     }
 
     'ConfigureTask' {
+        if (-not (Test-Path $CurrentServer)) {
+            throw "Stable production release is not installed: $CurrentServer"
+        }
         $node = (Get-Command node).Source
-        $server = Join-Path $AppRoot 'api\runtime\http-server.js'
-        $working = $AppRoot
-        $taskAction = New-ScheduledTaskAction -Execute $node -Argument "`"$server`"" -WorkingDirectory $working
+        $taskAction = New-ScheduledTaskAction -Execute $node -Argument "`"$CurrentServer`"" -WorkingDirectory $CurrentRoot
         $trigger = New-ScheduledTaskTrigger -AtStartup
         $settings = New-ScheduledTaskSettingsSet -RestartCount 5 -RestartInterval (New-TimeSpan -Minutes 1) -StartWhenAvailable
         $principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
         Register-ScheduledTask -TaskName $TaskName -Action $taskAction -Trigger $trigger -Settings $settings -Principal $principal -Force | Out-Null
         Write-Output "TASK_CONFIGURED=$TaskName"
+        Write-Output "TASK_SERVER=$CurrentServer"
         Write-Output "GIT_SHA=$gitSha"
         break
     }
@@ -70,9 +85,17 @@ switch ($Action) {
         }
 
         $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
-        if ($task) {
-            Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+        if (-not $task) {
+            throw "Production task '$TaskName' is not configured. Run deploy\\configure-production-host.ps1 once from an elevated Administrator PowerShell before deploying."
         }
+
+        $taskXml = [xml]$task.Xml
+        $taskArguments = [string]$taskXml.Task.Actions.Exec.Arguments
+        if ($taskArguments -notlike "*$CurrentServer*") {
+            throw "Production task '$TaskName' is not configured for the stable release path '$CurrentServer'. Re-run deploy\\configure-production-host.ps1 as Administrator."
+        }
+
+        Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
 
         Push-Location $AppRoot
         try {
@@ -92,13 +115,30 @@ switch ($Action) {
             Pop-Location
         }
 
-        if (-not $task) {
-            & $PSCommandPath -Action ConfigureTask -AppRoot $AppRoot -TaskName $TaskName -Port $Port
+        New-Item -ItemType Directory -Force -Path $DeploymentRoot, (Join-Path $DeploymentRoot 'releases') | Out-Null
+        if (Test-Path $ReleaseRoot) { Remove-Item -LiteralPath $ReleaseRoot -Recurse -Force }
+        New-Item -ItemType Directory -Force -Path $ReleaseRoot | Out-Null
+
+        & robocopy $AppRoot $ReleaseRoot /MIR /XD '.git' '.github' | Out-Host
+        if ($LASTEXITCODE -gt 7) { throw "robocopy release staging failed with exit code $LASTEXITCODE." }
+
+        $stagedServer = Join-Path $ReleaseRoot $ServerRelativePath
+        if (-not (Test-Path $stagedServer)) { throw "Staged release is incomplete: $stagedServer" }
+
+        if (Test-Path $CurrentRoot) {
+            Remove-Item -LiteralPath $CurrentRoot -Recurse -Force
         }
+        New-Item -ItemType Directory -Force -Path $CurrentRoot | Out-Null
+        & robocopy $ReleaseRoot $CurrentRoot /MIR | Out-Host
+        if ($LASTEXITCODE -gt 7) { throw "robocopy current-release promotion failed with exit code $LASTEXITCODE." }
+
+        if (-not (Test-Path $CurrentServer)) { throw "Promoted release is incomplete: $CurrentServer" }
+
         Start-ScheduledTask -TaskName $TaskName
         Start-Sleep -Seconds 3
         Invoke-LocalHealth
         Write-Output "DEPLOYED_GIT_SHA=$gitSha"
+        Write-Output "DEPLOYED_PATH=$CurrentRoot"
         Write-Output "DEPLOYED_AT_UTC=$([DateTime]::UtcNow.ToString('o'))"
         break
     }
