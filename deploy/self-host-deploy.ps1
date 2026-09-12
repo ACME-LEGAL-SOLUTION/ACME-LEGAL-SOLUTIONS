@@ -76,8 +76,15 @@ switch ($Action) {
 
         Push-Location $AppRoot
         try {
-            & npm ci --omit=dev
-            if ($LASTEXITCODE -ne 0) { throw "npm ci failed with exit code $LASTEXITCODE." }
+            if (Test-Path (Join-Path $AppRoot 'package-lock.json')) {
+                & npm ci --omit=dev
+                if ($LASTEXITCODE -ne 0) { throw "npm ci failed with exit code $LASTEXITCODE." }
+            }
+            else {
+                Write-Warning 'package-lock.json is absent; using npm install --omit=dev --no-package-lock for this lockfile-free repository.'
+                & npm install --omit=dev --no-package-lock
+                if ($LASTEXITCODE -ne 0) { throw "npm install failed with exit code $LASTEXITCODE." }
+            }
             & npm test
             if ($LASTEXITCODE -ne 0) { throw "npm test failed with exit code $LASTEXITCODE." }
         }
