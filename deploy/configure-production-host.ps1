@@ -44,7 +44,10 @@ if ($existingTask) {
     Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
 }
 
-$taskAction = New-ScheduledTaskAction -Execute $node -Argument "`"$server`"" -WorkingDirectory $CurrentRoot
+# Launch through PowerShell so the production environment is explicit for the
+# Node process without changing the host-wide environment.
+$launcher = "$env:ACME_ENV='production'; & '$node' '$server'"
+$taskAction = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -NonInteractive -ExecutionPolicy Bypass -Command `"$launcher`"" -WorkingDirectory $CurrentRoot
 $trigger = New-ScheduledTaskTrigger -AtStartup
 $settings = New-ScheduledTaskSettingsSet -RestartCount 5 -RestartInterval (New-TimeSpan -Minutes 1) -StartWhenAvailable
 $principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
@@ -85,4 +88,5 @@ Write-Output "DEPLOYMENT_ROOT=$DeploymentRoot"
 Write-Output "CURRENT_ROOT=$CurrentRoot"
 Write-Output "TASK_FILE=$taskFile"
 Write-Output "TASK_SDDL_NETWORK_SERVICE=FULL"
+Write-Output "TASK_RUNTIME_ENV=production"
 Write-Output "TASK_STATE=$($verifiedTask.State)"
