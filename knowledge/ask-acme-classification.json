@@ -1,0 +1,14 @@
+{
+  "version":"1.0.0",
+  "fields":["jurisdiction","stateOrTerritory","courtOrForum","matterType","legalInstrument","sectionOrRule","issue","dateContext","authorityLevel"],
+  "matterTypes":["civil","criminal","commercial","corporate","insolvency","arbitration","tax","employment","family","property","intellectual_property","constitutional","administrative","regulatory","consumer","banking_finance","cyber","environment","competition","cross_border","other"],
+  "rules":{
+    "jurisdiction":"resolve_before_authoritative_retrieval",
+    "courtOrForum":"derive_from_jurisdiction_matter_and_procedure",
+    "matterType":"required_for_source_and_specialist_routing",
+    "legalInstrument":"prefer_source_backed_match",
+    "sectionOrRule":"never_infer_without_source_backing",
+    "dateContext":"resolve_against_effective_legal_version"
+  },
+  "answerRequirements":["classification_summary","authoritative_sources","applicable_legal_version","relevant_authorities","provenance","uncertainties","human_review_gate"]
+}
