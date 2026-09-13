@@ -22,8 +22,6 @@ $CurrentRoot = Join-Path $DeploymentRoot 'current'
 $ReleaseRoot = Join-Path $DeploymentRoot 'releases'
 New-Item -ItemType Directory -Force -Path $CurrentRoot, $ReleaseRoot | Out-Null
 
-# The GitHub Actions runner service commonly runs as Network Service. Grant it
-# only Modify access to the deployment directory; do not grant it Administrator.
 $acl = Get-Acl -LiteralPath $DeploymentRoot
 $rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
     'NT AUTHORITY\NETWORK SERVICE',
@@ -37,6 +35,15 @@ Set-Acl -LiteralPath $DeploymentRoot -AclObject $acl
 
 $node = (Get-Command node).Source
 $server = Join-Path $CurrentRoot 'api\runtime\http-server.js'
+
+# Remove the existing task before recreating it. This eliminates stale task
+# state/security metadata while retaining the same stable production identity.
+$existingTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+if ($existingTask) {
+    Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+    Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
+}
+
 $taskAction = New-ScheduledTaskAction -Execute $node -Argument "`"$server`"" -WorkingDirectory $CurrentRoot
 $trigger = New-ScheduledTaskTrigger -AtStartup
 $settings = New-ScheduledTaskSettingsSet -RestartCount 5 -RestartInterval (New-TimeSpan -Minutes 1) -StartWhenAvailable
@@ -44,8 +51,6 @@ $principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccou
 
 Register-ScheduledTask -TaskName $TaskName -Action $taskAction -Trigger $trigger -Settings $settings -Principal $principal -Force | Out-Null
 
-# NTFS access is necessary, but it is not sufficient for a task created by an
-# Administrator. Task Scheduler also enforces the registered task's own DACL.
 $taskFile = Join-Path $env:WINDIR "System32\Tasks\$TaskName"
 if (-not (Test-Path -LiteralPath $taskFile)) {
     throw "Registered task file was not found: $taskFile"
@@ -57,11 +62,9 @@ if ($LASTEXITCODE -ne 0) {
 
 $taskService = New-Object -ComObject 'Schedule.Service'
 $taskService.Connect()
-# Microsoft Task Scheduler COM specifies the root task folder as a single backslash.
 $taskFolder = $taskService.GetFolder('\')
 $registeredTask = $taskFolder.GetTask($TaskName)
 $currentSddl = [string]$registeredTask.GetSecurityDescriptor(0xF)
-
 if ($currentSddl -notmatch '\(A;;FA;;;NS\)') {
     $updatedSddl = $currentSddl + '(A;;FA;;;NS)'
     $registeredTask.SetSecurityDescriptor($updatedSddl, 0)
@@ -72,8 +75,6 @@ if ($verifiedSddl -notmatch '\(A;;FA;;;NS\)') {
     throw 'Task Scheduler security descriptor does not grant Network Service full control of the production task.'
 }
 
-# Verify the same API surface the runner uses, so host configuration fails now
-# instead of allowing a later deployment to discover a hidden task ACL issue.
 $verifiedTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
 if (-not $verifiedTask) {
     throw "Task Scheduler cannot enumerate configured task '$TaskName'."
