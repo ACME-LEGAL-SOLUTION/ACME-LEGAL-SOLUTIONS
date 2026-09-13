@@ -1,1 +1,0 @@
-The supplied logo binary will be committed through the Git object API.
