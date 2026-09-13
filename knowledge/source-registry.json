@@ -1,0 +1,36 @@
+{
+  "version": "1.0.0",
+  "jurisdiction": "IN",
+  "sources": [
+    {
+      "id": "in.india-code",
+      "sourceType": "primary_authority",
+      "name": "India Code",
+      "issuingAuthority": "Government of India / National Informatics Centre",
+      "locator": "https://www.indiacode.nic.in/",
+      "capabilities": ["acts", "sections", "rules", "regulations", "notifications", "orders", "ordinances", "statutes", "circulars"],
+      "verificationState": "unverified",
+      "ingestionPolicy": "fetch_checksum_verify_publish"
+    },
+    {
+      "id": "in.supreme-court",
+      "sourceType": "primary_authority",
+      "name": "Supreme Court of India",
+      "issuingAuthority": "Supreme Court of India",
+      "locator": "https://www.sci.gov.in/",
+      "capabilities": ["judgments", "orders", "court_information", "judgment_summaries"],
+      "verificationState": "unverified",
+      "ingestionPolicy": "fetch_checksum_verify_publish"
+    },
+    {
+      "id": "in.ecourts",
+      "sourceType": "primary_authority",
+      "name": "eCourts India Services",
+      "issuingAuthority": "eCommittee, Supreme Court of India / National Informatics Centre",
+      "locator": "https://ecourts.gov.in/",
+      "capabilities": ["court_hierarchy", "case_status", "orders", "cause_lists", "court_metadata"],
+      "verificationState": "unverified",
+      "ingestionPolicy": "fetch_checksum_verify_publish"
+    }
+  ]
+}
