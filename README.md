@@ -4,7 +4,7 @@ Premium international legal, accounting and business counsel platform.
 
 ## Delivery status
 
-The platform foundation, governed AI execution architecture, persistent matter lifecycle, self-hosted production deployment plane, public site, Ask ACME intake foundation, approved ACME brand asset, and free-source legal research API are implemented. The legal knowledge layer is being accelerated using free/public authoritative sources, beginning with India Code.
+ACME is being delivered as working vertical slices with validation gates. The current line includes the core platform foundation, governed AI execution architecture, persistent matter lifecycle, self-hosted production deployment plane, public site, Ask ACME intake foundation, approved ACME brand asset, and the accelerated free-source legal research path.
 
 ## Brand
 
@@ -12,8 +12,8 @@ The platform foundation, governed AI execution architecture, persistent matter l
 
 ## Legal knowledge policy
 
-ACME must prefer authoritative public/free sources for legal research. Source results are returned with provenance and verification state. Public research is source-attributed and is not presented as an AI-generated legal opinion. Indian Kanoon is an optional authorized enrichment source and must never be treated as an unlicensed scraping target or a mandatory paid dependency.
+ACME prefers authoritative public/free sources for legal research. Research results carry provenance and verification state and are not presented as AI-generated legal opinions. Indian Kanoon is optional authorized enrichment, never an unlicensed scraping target or mandatory paid dependency.
 
 ## Development
 
-Requires Node.js >= 20. Run `npm test` for the repository test suite and `npm start` to run the API locally. The public legal research endpoint is `GET /api/legal-research?q=...`.
+Requires Node.js >= 20. Run `npm test` for the repository test suite and `npm start` to run the API locally. Public research uses `GET /api/legal-research?q=...`.
