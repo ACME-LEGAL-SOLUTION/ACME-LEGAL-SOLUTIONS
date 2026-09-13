@@ -28,8 +28,18 @@ function classifyQuery(query) {
 
 function scoreRecord(record, query) {
   const haystack = normalizeText([record.name, record.title, record.short_title, record.description, record.text].join(" ")).toLowerCase();
-  const terms = normalizeText(query).toLowerCase().split(/[^a-z0-9]+/).filter((x) => x.length > 2);
-  return terms.reduce((score, term) => score + (haystack.includes(term) ? 1 : 0), 0);
+  const normalizedQuery = normalizeText(query).toLowerCase();
+  const terms = normalizedQuery.split(/[^a-z0-9]+/).filter((x) => x.length > 2);
+  let score = terms.reduce((total, term) => total + (haystack.includes(term) ? 1 : 0), 0);
+
+  // Legal queries often use the fact pattern while the primary source uses the
+  // statutory act name. Award one deterministic act-family bonus rather than
+  // pretending that "cheque" or "dishonour" must appear verbatim in the title.
+  const chequeDishonourQuery = /\b(?:cheque|dishonou?r)\b/.test(normalizedQuery);
+  const negotiableInstrumentsRecord = /negotiable\s+instruments\s+act/.test(haystack);
+  if (chequeDishonourQuery && negotiableInstrumentsRecord) score += 1;
+
+  return score;
 }
 
 async function requestJson(url, fetchImpl = fetch) {
