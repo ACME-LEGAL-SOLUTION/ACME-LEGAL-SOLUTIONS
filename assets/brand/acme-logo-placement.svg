@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2048 1543" role="img" aria-label="ACME Legal Solution">
   <defs>
     <filter id="background-cut" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
-      <feColorMatrix type="matrix" values="-1 0 0 0 1  0 -1 0 0 1  0 0 -1 0 1  0 0 0 1 0" result="inverted"/>
-      <feComponentTransfer in="inverted"><feFuncA type="table" tableValues="0 0.04 0.18 0.55 1"/></feComponentTransfer>
+      <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -0.468 -1.573 -0.159 0 1.8" result="cut-alpha"/>
+      <feComponentTransfer in="cut-alpha"><feFuncA type="gamma" amplitude="1" exponent="0.5" offset="0"/></feComponentTransfer>
     </filter>
-    <mask id="cutout">
+    <mask id="cutout" maskUnits="userSpaceOnUse" x="0" y="0" width="2048" height="1543">
       <rect width="2048" height="1543" fill="black"/>
       <image href="acme-logo.jpg" width="2048" height="1543" filter="url(#background-cut)"/>
     </mask>
