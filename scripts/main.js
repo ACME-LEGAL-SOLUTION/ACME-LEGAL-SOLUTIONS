@@ -1,4 +1,8 @@
 const $=(s,c=document)=>c.querySelector(s);const $$=(s,c=document)=>[...c.querySelectorAll(s)];
+const APPROVED_ACME_LOGO='assets/brand/acme-logo.jpg';
+// STRICT BRAND RULE: the supplied ACME artwork is the only approved public mark.
+$$('img[src*="acme-logo-approved.svg"],img[src*="acme-logo-clean.svg"]').forEach(img=>{img.src=APPROVED_ACME_LOGO;img.removeAttribute('srcset')});
+$$('link[rel~="icon"]').forEach(link=>{link.href=APPROVED_ACME_LOGO;link.type='image/jpeg'});
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;const API_BASE='/api';const INDIA_CODE_API='https://indiacode.ecourtsindia.com/api/v1';
 addEventListener('load',()=>setTimeout(()=>$('.loader')?.classList.add('done'),350));
 const header=$('[data-header]'),progress=$('[data-progress]');
