@@ -43,3 +43,27 @@ function openConsultation(){
 $$('[data-ask-acme]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();openAskAcme()}));
 $$('a[href^="mailto:"]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();openConsultation()}));
 $$('.floating a[href="#consultation"]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();openConsultation()}));
+
+/* ACME opening experience: small logo animation -> one centered Disclaimer -> website. */
+(function(){
+  const loader=document.querySelector('.intro-loader[data-loader]');
+  const gateway=document.querySelector('[data-consent-gateway]');
+  const site=document.querySelector('[data-site]');
+  const drawer=document.querySelector('[data-legal-drawer]');
+  const accept=document.querySelector('[data-consent-accept]');
+  const prefs=document.querySelector('[data-consent-preferences]');
+  const reset=document.querySelector('[data-consent-reset]');
+  const reveal=()=>{if(site)site.hidden=false;if(gateway)gateway.hidden=true;document.body.classList.remove('is-locked')};
+  const show=()=>{if(site)site.hidden=true;if(gateway){gateway.hidden=false;document.body.classList.add('is-locked')}};
+  if(drawer)drawer.hidden=true;
+  if(loader){loader.classList.remove('done');setTimeout(()=>loader.classList.add('done'),900)}
+  let acknowledged=false;try{acknowledged=sessionStorage.getItem('acme_entry_ack')==='1'}catch{}
+  if(!acknowledged){show();setTimeout(show,950)}else{reveal()}
+  const acknowledge=()=>{try{sessionStorage.setItem('acme_entry_ack','1')}catch{};reveal()};
+  accept?.addEventListener('click',acknowledge);
+  prefs?.addEventListener('click',acknowledge);
+  reset?.addEventListener('click',()=>{try{sessionStorage.removeItem('acme_entry_ack')}catch{};show()});
+  document.querySelectorAll('[data-legal]').forEach(btn=>btn.addEventListener('click',()=>{if(drawer)drawer.hidden=false}));
+  document.querySelector('[data-legal-close]')?.addEventListener('click',()=>{if(drawer)drawer.hidden=true});
+  drawer?.addEventListener('click',e=>{if(e.target===drawer)drawer.hidden=true});
+})();
