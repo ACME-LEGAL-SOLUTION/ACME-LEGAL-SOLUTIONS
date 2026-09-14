@@ -1,2 +1,3 @@
-/* Final visual composition is maintained in the dedicated fidelity layer. */
+/* Final visual composition stack. 16-art-direction is the last cosmetic authority. */
 @import url("15-visual-fidelity.css");
+@import url("16-art-direction.css");
