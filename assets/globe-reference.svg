@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 835 555" role="img" aria-label="ACME global Earth reference visual">
+<defs>
+  <clipPath id="earthClip"><ellipse cx="430" cy="280" rx="420" ry="275"/></clipPath>
+</defs>
+<image href="data:image/jpeg;base64,PLACEHOLDER" width="835" height="555" preserveAspectRatio="xMidYMid slice" clip-path="url(#earthClip)"/>
+</svg>
