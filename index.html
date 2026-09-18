@@ -1,131 +1,229 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="description" content="ACME Legal Solution — integrated legal, accounting, taxation, regulatory and business advisory support for complex matters in India and across borders.">
-<meta name="theme-color" content="#071016"><title>ACME Legal Solution | Law, Business & Cross-Border Advisory</title>
+<meta name="theme-color" content="#f5f1e8">
+<title>ACME Legal Solution | Law, Business & Cross-Border Advisory</title>
 <link rel="icon" type="image/svg+xml" href="assets/brand/acme-logo-placement.svg">
-<link rel="stylesheet" href="styles/00-reset.css"><link rel="stylesheet" href="styles/site-v3.css">
+<link rel="stylesheet" href="styles/00-reset.css">
+<link rel="stylesheet" href="styles/site-v3.css">
 </head>
 <body>
 <div class="progress"></div>
-<header class="sid-header">
-  <div class="utility container">
-    <div class="utility-left"><a href="#insights">Insights</a><a href="#about">About ACME</a><a href="#contact">Contact</a></div>
-    <div class="utility-right"><span>INDIA</span><span>GLOBAL MATTERS</span><button data-ask="I want to understand how ACME can assist with my matter.">Ask ACME ↗</button></div>
+
+<header class="acme-header">
+  <div class="header-top">
+    <div class="container header-top-inner">
+      <span>ACME LEGAL SOLUTION</span>
+      <div><span>INDIA</span><span>GLOBAL MATTERS</span><button data-ask="I want to understand how ACME can assist with my matter.">ASK ACME ↗</button></div>
+    </div>
   </div>
-  <div class="main-nav container">
-    <a class="brand" href="#top" aria-label="ACME Legal Solution"><img src="assets/brand/acme-logo-placement.svg" alt="ACME Legal Solution"></a>
+  <div class="container main-nav">
+    <a class="brand" href="#top" aria-label="ACME Legal Solution">
+      <img src="assets/brand/acme-logo-placement.svg" alt="ACME Legal Solution">
+    </a>
     <nav class="nav" aria-label="Primary navigation">
-      <a href="#people">People</a><a href="#services">Services & Industries</a><a href="#insights">Insights</a><a href="#about">About</a><a href="#careers">Careers</a>
+      <a href="#people">People</a>
+      <a href="#services">Services</a>
+      <a href="#industries">Industries</a>
+      <a href="#insights">Insights</a>
+      <a href="#about">About</a>
+      <a href="#careers">Careers</a>
     </nav>
     <button class="header-search" data-ask="I have a legal or business question. Help me identify the right ACME capability.">Search <span>⌕</span></button>
-    <button class="menu">Menu</button>
+    <button class="menu" aria-expanded="false">Menu</button>
   </div>
 </header>
 
 <main id="top">
-<section class="sid-hero">
-  <div class="hero-image"></div><div class="hero-overlay"></div>
-  <div class="container hero-content">
+
+<section class="v4-hero">
+  <div class="hero-photo" aria-hidden="true"></div>
+  <div class="hero-shade"></div>
+  <div class="container hero-inner">
+    <div class="hero-brand-lockup reveal">
+      <div class="hero-mark"><img src="assets/brand/acme-logo-placement.svg" alt=""></div>
+      <p class="mono">LAW · BUSINESS · CROSS-BORDER ADVISORY</p>
+    </div>
     <div class="hero-copy reveal">
-      <p class="eyebrow mono gold">ACME LEGAL SOLUTION</p>
-      <h1>Clarity for<br><em>complex matters.</em></h1>
-      <p>Integrated legal, business, tax, accounting and regulatory thinking for clients navigating consequential decisions in India and across borders.</p>
-      <div class="hero-actions"><button class="btn primary" data-ask="I have a complex matter and want to understand the right ACME capability.">Explore how we can help <span>→</span></button><button class="btn" data-scroll="services">Services & industries <span>↓</span></button></div>
+      <p class="eyebrow mono">ACME / INDIA / INTERNATIONAL</p>
+      <h1>Where complexity<br><em>meets clarity.</em></h1>
+      <p>Integrated legal, business, tax, accounting and regulatory thinking for consequential matters in India and across borders.</p>
+      <div class="hero-actions">
+        <button class="btn light" data-consult>Start a conversation <span>→</span></button>
+        <button class="btn ghost" data-scroll="services">Explore capabilities <span>↓</span></button>
+      </div>
     </div>
-    <div class="hero-caption mono">INDIA / GLOBAL MATTERS <span>01 — 05</span></div>
+    <div class="hero-meta mono"><span>01 / ACME</span><span>INDIA · HONG KONG · INTERNATIONAL</span></div>
   </div>
 </section>
 
-<section class="announcement">
-  <div class="container announcement-grid">
-    <div class="announcement-label"><span class="mono">Latest</span><b>From ACME</b></div>
-    <div class="announcement-main reveal"><span class="mono gold">FEATURED</span><h2>Where legal strategy meets business reality.</h2><p>ACME brings multiple professional perspectives together around the matter, with technology-assisted research and human review at the centre.</p><button data-ask="Tell me how ACME's integrated approach could apply to my matter.">Read more →</button></div>
-    <div class="announcement-index mono">01 / 03</div>
+<section class="v4-statement">
+  <div class="container statement-grid">
+    <div class="section-kicker mono">01 / THE FIRM</div>
+    <div class="statement-copy reveal">
+      <p class="lead">ACME brings legal, commercial, financial and regulatory perspectives together around the matter — because complex decisions rarely belong to one discipline.</p>
+      <p>Our work is built around context, source awareness, coordinated professional input and disciplined human judgment. Technology can accelerate research; it does not replace responsibility.</p>
+    </div>
   </div>
 </section>
 
-<section id="services" class="section services-section">
+<section id="services" class="v4-section services">
   <div class="container">
-    <div class="section-top reveal"><div><p class="eyebrow mono">01 / SERVICES & INDUSTRIES</p><h2 class="section-title">One platform.<br><em>Many disciplines.</em></h2></div><p class="section-copy">ACME is structured around the way complex matters actually develop: across legal questions, commercial objectives, financial consequences, regulatory requirements and jurisdictions.</p></div>
-    <div class="service-list">
-      <article class="service-row reveal"><span class="mono">01</span><div><h3>Legal Advisory</h3><p>Contracts, disputes, corporate matters, legal research, transactions and strategic legal support.</p></div><button data-ask="I need legal advisory support.">Explore <span>→</span></button></article>
-      <article class="service-row reveal"><span class="mono">02</span><div><h3>Business & Commercial</h3><p>Business structuring, commercial arrangements, investments, partnerships and strategic decision support.</p></div><button data-ask="I need business or commercial advisory support.">Explore <span>→</span></button></article>
-      <article class="service-row reveal"><span class="mono">03</span><div><h3>Tax & Accounting</h3><p>Taxation, accounting, financial structuring and compliance considered within the wider matter.</p></div><button data-ask="I need tax or accounting support.">Explore <span>→</span></button></article>
-      <article class="service-row reveal"><span class="mono">04</span><div><h3>Regulatory & Compliance</h3><p>Regulatory pathways, licensing, compliance questions, authorities and evolving obligations.</p></div><button data-ask="I have a regulatory or compliance issue.">Explore <span>→</span></button></article>
-      <article class="service-row reveal"><span class="mono">05</span><div><h3>Cross-Border Matters</h3><p>India-linked international transactions, investments, disputes, structuring and jurisdictional questions.</p></div><button data-ask="I have a cross-border matter involving India.">Explore <span>→</span></button></article>
-      <article class="service-row reveal"><span class="mono">06</span><div><h3>Industries</h3><p>Healthcare, technology, real estate, travel, financial services, consumer businesses and emerging enterprises.</p></div><button data-ask="Help me identify the right industry capability for my matter.">Explore <span>→</span></button></article>
+    <div class="section-head reveal">
+      <div><p class="section-kicker mono">02 / SERVICES</p><h2>Capabilities<br><em>without silos.</em></h2></div>
+      <p>Our capabilities can be brought together around a single matter, transaction, dispute, investment or regulatory question.</p>
+    </div>
+    <div class="service-directory">
+      <a class="service-item reveal" href="#contact"><span class="num mono">01</span><div><h3>Legal Advisory</h3><p>Corporate matters, contracts, disputes, transactions, legal research and strategic legal support.</p></div><b>↗</b></a>
+      <a class="service-item reveal" href="#contact"><span class="num mono">02</span><div><h3>Business & Commercial</h3><p>Business structuring, commercial arrangements, partnerships, investments and strategic decision support.</p></div><b>↗</b></a>
+      <a class="service-item reveal" href="#contact"><span class="num mono">03</span><div><h3>Tax & Accounting</h3><p>Taxation, accounting, financial structuring and compliance considered within the wider matter.</p></div><b>↗</b></a>
+      <a class="service-item reveal" href="#contact"><span class="num mono">04</span><div><h3>Regulatory & Compliance</h3><p>Regulatory pathways, licensing, compliance questions, authorities and evolving obligations.</p></div><b>↗</b></a>
+      <a class="service-item reveal" href="#contact"><span class="num mono">05</span><div><h3>Cross-Border Matters</h3><p>India-linked international transactions, investments, disputes, structuring and jurisdictional questions.</p></div><b>↗</b></a>
+      <a class="service-item reveal" href="#contact"><span class="num mono">06</span><div><h3>Legal & Corporate Structuring</h3><p>Integrated legal and commercial perspectives for ownership, governance, investment and business structures.</p></div><b>↗</b></a>
     </div>
   </div>
 </section>
 
-<section id="about" class="section about-section">
-  <div class="container about-grid">
-    <div class="about-image reveal"><div class="about-monogram">A</div><span class="mono">ACME / INDIA</span></div>
-    <div class="about-copy reveal"><p class="eyebrow mono">02 / ABOUT ACME</p><h2>Built around<br><em>the client matter.</em></h2><p>Complex legal and business questions rarely fit neatly into one professional category. ACME is designed to coordinate legal, financial, regulatory and commercial perspectives so that the issue is understood in its full context.</p><p>Our approach combines experienced human judgment with structured research, source awareness and technology-assisted workflows.</p><button class="text-link" data-ask="Tell me more about ACME's approach.">Discover ACME →</button></div>
-  </div>
-</section>
-
-<section id="intelligence" class="section intelligence-section dark">
+<section id="industries" class="v4-section industries">
   <div class="container">
-    <div class="section-top reveal"><div><p class="eyebrow mono gold">03 / ACME INTELLIGENCE</p><h2 class="section-title">Technology.<br><em>With a human gate.</em></h2></div><p class="section-copy">Ask ACME provides an orientation and public-source research layer. It is designed to accelerate understanding—not replace professional judgment.</p></div>
-    <div class="intelligence-panel reveal">
-      <div class="intel-intro"><span class="mono gold">ASK ACME / GOVERNED RESEARCH</span><h3>Start with the question.</h3><p>Describe a legal, regulatory or business issue and explore relevant public-source material. Verify the current law and obtain professional review before acting.</p><button class="btn primary" data-ask="I want to research a legal or regulatory issue.">Open Ask ACME →</button></div>
-      <div class="intel-flow"><div><i>01</i><b>Question</b><small>facts + objective</small></div><div><i>02</i><b>Research</b><small>public sources</small></div><div><i>03</i><b>Context</b><small>jurisdiction</small></div><div class="gate"><i>04</i><b>Human review</b><small>professional judgment</small></div></div>
+    <div class="section-head light-head reveal">
+      <div><p class="section-kicker mono">03 / INDUSTRIES</p><h2>Knowledge shaped<br><em>by the market.</em></h2></div>
+      <p>Industry context changes the legal question. ACME considers the commercial environment surrounding the matter.</p>
+    </div>
+    <div class="industry-grid">
+      <a href="#contact" class="industry reveal"><span>01</span><strong>Financial Services</strong><i>↗</i></a>
+      <a href="#contact" class="industry reveal"><span>02</span><strong>Healthcare</strong><i>↗</i></a>
+      <a href="#contact" class="industry reveal"><span>03</span><strong>Real Estate</strong><i>↗</i></a>
+      <a href="#contact" class="industry reveal"><span>04</span><strong>Travel & Hospitality</strong><i>↗</i></a>
+      <a href="#contact" class="industry reveal"><span>05</span><strong>Technology</strong><i>↗</i></a>
+      <a href="#contact" class="industry reveal"><span>06</span><strong>International Trade</strong><i>↗</i></a>
+      <a href="#contact" class="industry reveal"><span>07</span><strong>Investment & Private Capital</strong><i>↗</i></a>
+      <a href="#contact" class="industry reveal"><span>08</span><strong>Consumer Businesses</strong><i>↗</i></a>
     </div>
   </div>
 </section>
 
-<section id="global" class="section global-section">
+<section id="people" class="v4-section people">
+  <div class="container people-grid">
+    <div class="people-visual reveal">
+      <div class="portrait-frame"><div class="portrait-initial">A</div><span class="mono">ACME / PEOPLE</span></div>
+    </div>
+    <div class="people-copy reveal">
+      <p class="section-kicker mono">04 / PEOPLE</p>
+      <h2>Professional judgment<br><em>starts with people.</em></h2>
+      <p>ACME brings together legal, business, accounting, regulatory and international business perspectives. The firm is designed around collaboration between professionals rather than isolated service lines.</p>
+      <div class="people-list">
+        <a href="#contact"><span>Leadership</span><b>→</b></a>
+        <a href="#contact"><span>Legal Professionals</span><b>→</b></a>
+        <a href="#contact"><span>Business & Advisory</span><b>→</b></a>
+        <a href="#contact"><span>International Network</span><b>→</b></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="intelligence" class="v4-intelligence">
   <div class="container">
-    <div class="section-top reveal"><div><p class="eyebrow mono">04 / GLOBAL REACH</p><h2 class="section-title">India at the centre.<br><em>Connected to the world.</em></h2></div><p class="section-copy">For matters spanning borders, ACME can help structure the India-side issues and coordinate the questions that arise across jurisdictions.</p></div>
-    <div class="global-map reveal">
-      <div class="globe-lines"></div><div class="globe-core"><b>ACME</b><span class="mono">INDIA / CORE</span></div>
-      <button class="geo geo-india" data-ask="I have a matter involving India.">INDIA <small>CORE</small></button>
-      <button class="geo geo-gulf" data-ask="I have a matter involving India and the Gulf.">GULF <small>REGION</small></button>
-      <button class="geo geo-eu" data-ask="I have a matter involving India and Europe.">EUROPE <small>REGION</small></button>
-      <button class="geo geo-apac" data-ask="I have a matter involving India and APAC.">APAC <small>REGION</small></button>
-      <div class="global-note mono">JURISDICTION / SOURCE / CONTEXT / REVIEW</div>
+    <div class="intelligence-head reveal">
+      <p class="section-kicker mono">05 / ACME INTELLIGENCE</p>
+      <h2>Research accelerated.<br><em>Judgment retained.</em></h2>
+      <p>Ask ACME is a governed public-source research layer designed to help orient a question, identify authorities and surface relevant material before professional review.</p>
+    </div>
+    <div class="intel-editorial reveal">
+      <div class="intel-number mono">ACME / 01</div>
+      <div><span class="mono gold">GOVERNED RESEARCH</span><h3>Start with the question.</h3><p>Describe the legal, regulatory or business issue. Explore public-source material. Verify the current position and obtain professional review before acting.</p><button class="btn light" data-ask="I want to research a legal or regulatory issue.">Open Ask ACME →</button></div>
+      <div class="intel-steps">
+        <span><b>01</b> QUESTION</span><span><b>02</b> SOURCE</span><span><b>03</b> CONTEXT</span><span><b>04</b> HUMAN REVIEW</span>
+      </div>
     </div>
   </div>
 </section>
 
-<section id="insights" class="section insights-section">
+<section class="v4-section global">
   <div class="container">
-    <div class="section-top reveal"><div><p class="eyebrow mono">05 / INSIGHTS</p><h2 class="section-title">Ideas that help<br><em>you stay informed.</em></h2></div><p class="section-copy">Selected legal, regulatory, business and cross-border perspectives. ACME insights are designed to make complex developments easier to understand.</p></div>
-    <div class="insight-feature reveal"><div class="feature-image"><span class="mono">ACME / FEATURE</span></div><div class="feature-copy"><span class="mono gold">LEGAL · BUSINESS · REGULATORY</span><h3>Understanding the issues behind the headline.</h3><p>Explore the context, governing framework and practical questions that should be considered when law and business move quickly.</p><button data-ask="Show me how ACME approaches legal and regulatory research.">Explore insights →</button></div></div>
-    <div class="insight-grid">
-      <article><span class="mono">LEGAL UPDATE</span><h3>Research begins with the authority.</h3><p>Identify the governing instrument, jurisdiction and current legal state.</p><button data-ask="Help me identify the governing legal authorities for my issue.">Read →</button></article>
-      <article><span class="mono">CROSS-BORDER</span><h3>One transaction can create several legal questions.</h3><p>Map the jurisdictions, parties, approvals and governing documents before action.</p><button data-ask="Help me map the legal questions in a cross-border transaction.">Read →</button></article>
-      <article><span class="mono">AI & LAW</span><h3>Technology can accelerate research. Judgment remains human.</h3><p>Understand where AI-assisted research fits—and where professional review is essential.</p><button data-ask="Explain ACME's AI-assisted legal research approach.">Read →</button></article>
+    <div class="section-head reveal">
+      <div><p class="section-kicker mono">06 / GLOBAL MATTERS</p><h2>India connected<br><em>to the world.</em></h2></div>
+      <p>For matters spanning borders, ACME can help structure India-side legal and commercial questions and coordinate the issues that arise across jurisdictions.</p>
+    </div>
+    <div class="world-stage reveal">
+      <div class="world-orbit orbit-one"></div><div class="world-orbit orbit-two"></div><div class="world-core"><img src="assets/brand/acme-logo-placement.svg" alt="ACME Legal Solution"><span class="mono">INDIA / CORE</span></div>
+      <button class="world-point p-india" data-ask="I have a matter involving India."><b>INDIA</b><small>CORE</small></button>
+      <button class="world-point p-hk" data-ask="I have a matter involving India and Hong Kong."><b>HONG KONG</b><small>CROSS-BORDER</small></button>
+      <button class="world-point p-gulf" data-ask="I have a matter involving India and the Gulf."><b>GULF</b><small>REGION</small></button>
+      <button class="world-point p-eu" data-ask="I have a matter involving India and Europe."><b>EUROPE</b><small>REGION</small></button>
+      <button class="world-point p-apac" data-ask="I have a matter involving India and APAC."><b>APAC</b><small>REGION</small></button>
+      <div class="world-footer mono">JURISDICTION · SOURCE · CONTEXT · REVIEW</div>
     </div>
   </div>
 </section>
 
-<section class="section careers-section" id="careers">
-  <div class="container careers-grid reveal"><div><p class="eyebrow mono">06 / CAREERS</p><h2>Build a career<br>around <em>complexity.</em></h2></div><div><p>ACME brings together legal, business, accounting, regulatory and technology-oriented professionals. We value disciplined thinking, integrity, collaboration and continuous learning.</p><button class="btn" data-ask="I am interested in opportunities with ACME.">Explore opportunities →</button></div></div>
+<section id="insights" class="v4-section insights">
+  <div class="container">
+    <div class="section-head reveal">
+      <div><p class="section-kicker mono">07 / INSIGHTS</p><h2>Perspective for<br><em>what comes next.</em></h2></div>
+      <p>Selected legal, regulatory, business and cross-border perspectives designed to make complex developments easier to understand.</p>
+    </div>
+    <div class="insight-lead reveal">
+      <div class="insight-image"><span class="mono">ACME / ANALYSIS</span></div>
+      <div class="insight-story"><span class="mono gold">LEGAL · BUSINESS · REGULATORY</span><h3>Understanding the issues behind the headline.</h3><p>Explore the governing framework, relevant authorities and practical questions that should be considered when law and business move quickly.</p><button data-ask="Show me how ACME approaches legal and regulatory research.">Explore ACME insights →</button></div>
+    </div>
+    <div class="insight-cards">
+      <article class="reveal"><span class="mono">LEGAL UPDATE</span><h3>Research begins with the authority.</h3><p>Identify the governing instrument, jurisdiction and current legal state.</p><button data-ask="Help me identify the governing legal authorities for my issue.">Read →</button></article>
+      <article class="reveal"><span class="mono">CROSS-BORDER</span><h3>One transaction can create several legal questions.</h3><p>Map jurisdictions, parties, approvals and governing documents before action.</p><button data-ask="Help me map the legal questions in a cross-border transaction.">Read →</button></article>
+      <article class="reveal"><span class="mono">AI & LAW</span><h3>Technology can accelerate research. Judgment remains human.</h3><p>Understand where AI-assisted research fits and where professional review is essential.</p><button data-ask="Explain ACME's AI-assisted legal research approach.">Read →</button></article>
+    </div>
+  </div>
 </section>
 
-<section id="contact" class="contact-section dark">
-  <div class="container contact-grid reveal"><div><p class="eyebrow mono gold">07 / CONTACT</p><h2>Let’s talk<br><em>about the matter.</em></h2></div><div><p>Do not send confidential or privileged information through the general website until an appropriate communication channel has been confirmed.</p><div class="hero-actions"><button class="btn primary" data-consult>Request a professional consultation →</button><button class="btn" data-ask="I want to contact ACME about a matter.">Start with Ask ACME →</button></div></div></div>
+<section id="about" class="v4-about">
+  <div class="container about-editorial">
+    <div class="about-image reveal"><div class="about-logo-plate"><img src="assets/brand/acme-logo-placement.svg" alt="ACME Legal Solution"></div><span class="mono">ACME / INDIA</span></div>
+    <div class="about-text reveal">
+      <p class="section-kicker mono">08 / ABOUT ACME</p>
+      <h2>A professional platform<br><em>built around the matter.</em></h2>
+      <p>Complex legal and business questions rarely fit neatly into one category. ACME is designed to coordinate legal, financial, regulatory and commercial perspectives around the client's objective.</p>
+      <p>Our approach combines experienced human judgment with structured research, source awareness and technology-assisted workflows.</p>
+      <button class="text-link" data-ask="Tell me more about ACME's approach.">Discover ACME →</button>
+    </div>
+  </div>
+</section>
+
+<section id="careers" class="v4-careers">
+  <div class="container careers-editorial reveal">
+    <p class="section-kicker mono">09 / CAREERS</p>
+    <div><h2>Build your practice.<br><em>Expand your perspective.</em></h2><p>ACME brings together professionals across law, business, accounting, regulatory affairs and technology. We value disciplined thinking, integrity, collaboration and continuous learning.</p><button class="btn dark-btn" data-ask="I am interested in opportunities with ACME.">Explore opportunities →</button></div>
+  </div>
+</section>
+
+<section id="contact" class="v4-contact">
+  <div class="container contact-editorial reveal">
+    <div><p class="section-kicker mono">10 / CONTACT</p><h2>Bring the<br><em>matter.</em></h2></div>
+    <div><p>Do not send confidential or privileged information through the general website until an appropriate communication channel has been confirmed.</p><div class="hero-actions"><button class="btn light" data-consult>Request a professional consultation →</button><button class="btn ghost" data-ask="I want to contact ACME about a matter.">Start with Ask ACME →</button></div></div>
+  </div>
 </section>
 </main>
 
-<footer class="footer">
-<div class="container footer-grid">
-  <div class="footer-brand"><img src="assets/brand/acme-logo-placement.svg" alt="ACME Legal Solution"><p>Integrated legal, business, tax, accounting and regulatory support for complex matters.</p></div>
-  <div><b>EXPLORE</b><a href="#people">People</a><a href="#services">Services & Industries</a><a href="#insights">Insights</a><a href="#about">About</a><a href="#careers">Careers</a></div>
-  <div><b>LEGAL</b><a href="legal.html#privacy">Privacy Policy</a><a href="legal.html#cookies">Cookie Policy</a><a href="legal.html#terms">Terms of Use</a><a href="legal.html#disclaimer">Website Disclaimer</a></div>
-  <div><b>CONNECT</b><button data-ask="I would like to contact ACME about a matter.">Ask ACME →</button><button data-consult>Request consultation →</button></div>
-</div>
-<div class="container footer-bottom"><span>© ACME — Legal Solution. All rights reserved.</span><span>LAW · BUSINESS · INTELLIGENCE</span></div>
+<footer class="v4-footer">
+  <div class="container footer-brand-lockup">
+    <div class="footer-logo-plate"><img src="assets/brand/acme-logo-placement.svg" alt="ACME Legal Solution"></div>
+    <p>Integrated legal, business, tax, accounting and regulatory support for complex matters in India and across borders.</p>
+  </div>
+  <div class="container footer-links">
+    <div><b>EXPLORE</b><a href="#people">People</a><a href="#services">Services</a><a href="#industries">Industries</a><a href="#insights">Insights</a><a href="#about">About</a><a href="#careers">Careers</a></div>
+    <div><b>LEGAL</b><a href="legal.html#privacy">Privacy Policy</a><a href="legal.html#cookies">Cookie Policy</a><a href="legal.html#terms">Terms of Use</a><a href="legal.html#disclaimer">Website Disclaimer</a></div>
+    <div><b>CONNECT</b><button data-ask="I would like to contact ACME about a matter.">Ask ACME →</button><button data-consult>Request consultation →</button></div>
+  </div>
+  <div class="container footer-bottom"><span>© ACME — Legal Solution. All rights reserved.</span><span>LAW · BUSINESS · INTELLIGENCE</span></div>
 </footer>
 
 <aside class="ask-panel" aria-label="Ask ACME">
-<div class="ask-head"><b>ASK ACME / RESEARCH</b><button class="ask-close" aria-label="Close">×</button></div>
-<div class="ask-body"><form class="ask-form"><textarea id="ask-query" placeholder="Describe the legal, regulatory or business issue…" required></textarea><div class="ask-controls"><select id="ask-jurisdiction" aria-label="Jurisdiction"><option>India</option><option>Maharashtra, India</option><option>International / Other</option></select><button class="btn ask-send" type="submit">Research →</button></div><div class="ask-chips"><button class="ask-chip" type="button">Legal issue</button><button class="ask-chip" type="button">Business in India</button><button class="ask-chip" type="button">Regulatory approval</button><button class="ask-chip" type="button">Cross-border matter</button></div><p class="ask-status" role="status"></p><div class="results"></div></form></div>
+  <div class="ask-head"><b>ASK ACME / RESEARCH</b><button class="ask-close" aria-label="Close">×</button></div>
+  <div class="ask-body"><form class="ask-form"><textarea id="ask-query" placeholder="Describe the legal, regulatory or business issue…" required></textarea><div class="ask-controls"><select id="ask-jurisdiction" aria-label="Jurisdiction"><option>India</option><option>Maharashtra, India</option><option>International / Other</option></select><button class="btn ask-send" type="submit">Research →</button></div><div class="ask-chips"><button class="ask-chip" type="button">Legal issue</button><button class="ask-chip" type="button">Business in India</button><button class="ask-chip" type="button">Regulatory approval</button><button class="ask-chip" type="button">Cross-border matter</button></div><p class="ask-status" role="status"></p><div class="results"></div></form></div>
 </aside>
+
 <script src="scripts/main-v3.js"></script>
 </body>
 </html>
